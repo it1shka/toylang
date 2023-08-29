@@ -1,5 +1,7 @@
 #include "ibuffer.h"
 
+using namespace lexer;
+
 InputBuffer::InputBuffer(std::istream& source) : source(source) {
     current = std::nullopt;
     line = 1;

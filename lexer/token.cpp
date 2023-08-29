@@ -1,5 +1,7 @@
 #include "token.h"
 
+using namespace lexer;
+
 std::string tokenTypeToString(TokenType type) {
     using enum TokenType;
     switch (type) {

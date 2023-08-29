@@ -3,4 +3,4 @@ project(toy_lang)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(toy_lang main.cpp token.cpp token.h ibuffer.cpp ibuffer.h)
+add_executable(toy_lang main.cpp lexer/token.cpp lexer/token.h lexer/ibuffer.cpp lexer/ibuffer.h)

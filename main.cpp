@@ -1,8 +1,9 @@
 #include <vector>
 #include <iostream>
-#include "token.h"
+#include "lexer/token.h"
 
 int main() {
+    using namespace lexer;
     using enum TokenType;
     const auto tokens = std::vector<Token> {
         { Keyword, "let" },
