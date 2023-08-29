@@ -5,12 +5,12 @@ enum class TokenType {
     Keyword, Identifier,
     Operator, Punctuation,
     Number,
+    EndOfFile, Illegal
 };
-
-std::string tokenTypeToString(TokenType tokenType);
 
 struct Token {
     const TokenType type;
     const std::string value;
+    const std::tuple<unsigned, unsigned> position;
     [[nodiscard]] std::string toString() const;
 };

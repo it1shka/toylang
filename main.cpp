@@ -1,6 +1,6 @@
-#include <iostream>
 #include <vector>
-#include "lexer.h"
+#include <iostream>
+#include "token.h"
 
 int main() {
     using enum TokenType;
