@@ -9,15 +9,12 @@ InputBuffer::InputBuffer(std::istream& source) : source(source) {
 }
 
 char InputBuffer::peek() {
-    if (current.has_value()) {
-        return current.value();
-    }
-    if (eof()) {
-        return '\0';
-    }
+    if (eof()) return '\0';
+    if (current) return *current;
+
     char value;
     source.get(value);
-    current = std::make_optional(value);
+    current = value;
     return value;
 }
 
