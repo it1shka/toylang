@@ -10,7 +10,8 @@ namespace lexer {
         std::tuple<unsigned, unsigned> position;
         // private parsing functions
         Token readToken();
-        std::string readWhile(std::function<bool(char)> predicate);
+        void skipWhile(std::function<bool(char)> &predicate);
+        [[nodiscard]] std::string readWhile(std::function<bool(char)> &predicate);
     public:
         explicit Lexer(std::istream &source);
         const Token& peek();

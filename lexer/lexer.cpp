@@ -26,11 +26,21 @@ Token Lexer::next() {
 }
 
 // private methods
-
 Token Lexer::readToken() {
 
 }
 
-std::string Lexer::readWhile(std::function<bool(char)> predicate) {
+void Lexer::skipWhile(std::function<bool(char)> &predicate) {
+    while(!buffer.eof() && predicate(buffer.peek())) {
+        buffer.next();
+    }
+}
 
+std::string Lexer::readWhile(std::function<bool(char)> &predicate) {
+    std::string output;
+    while (!buffer.eof() && predicate(buffer.peek())) {
+        const auto letter = buffer.next();
+        output += letter;
+    }
+    return output;
 }
