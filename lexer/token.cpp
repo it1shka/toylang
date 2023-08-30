@@ -17,11 +17,14 @@ std::string tokenTypeToString(TokenType type) {
 }
 
 std::string Token::toString() const {
-    const auto strType = tokenTypeToString(type);
+    auto output = tokenTypeToString(type);
     const auto [line, column] = position;
+    if (type != TokenType::EndOfFile) {
+        output += " '" + value + "'";
+    }
     return (
-            strType + " '" + value +
-            "' at (line " + std::to_string(line) +
+            output +
+            " at (line " + std::to_string(line) +
             ", column " + std::to_string(column) + ")"
     );
 }

@@ -10,7 +10,8 @@ int main() {
         { Identifier, "a" },
         { Operator, "=" },
         { Number, "5" },
-        { Punctuation, ";" }
+        { Punctuation, ";" },
+        { EndOfFile }
     };
     for (const auto &token : tokens) {
         std::cout << token.toString() << std::endl;

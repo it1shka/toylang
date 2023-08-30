@@ -1,0 +1,14 @@
+# Program that calculates fibonacci number
+
+fun fibonacci(n) {
+    if (n < 2) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+fun main() {
+    let user_input = get_number();
+    let result = fibonacci(user_input);
+    print(result);
+}
+
+main();
