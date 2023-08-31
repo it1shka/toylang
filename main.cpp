@@ -30,10 +30,6 @@ auto testLexer() -> void {
     }
 }
 
-auto testAST() -> void {
-    auto cock =
-}
-
 int main() {
     testLexer();
 }
