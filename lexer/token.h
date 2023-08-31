@@ -9,7 +9,7 @@ namespace lexer {
         EndOfFile, Illegal
     };
 
-    struct Token {
+    struct Token final {
         const TokenType type;
         const std::string value;
         const std::tuple<unsigned, unsigned> position;

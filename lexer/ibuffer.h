@@ -4,7 +4,7 @@
 #include <iostream>
 
 namespace lexer {
-    class InputBuffer {
+    class InputBuffer final {
         std::istream &source;
         std::optional<char> current;
         unsigned line, column;

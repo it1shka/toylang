@@ -4,7 +4,7 @@
 #include "token.h"
 
 namespace lexer {
-    class Lexer {
+    class Lexer final {
         InputBuffer buffer;
         std::optional<Token> currentToken;
         std::tuple<unsigned, unsigned> currentPosition;
