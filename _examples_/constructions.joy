@@ -1,0 +1,25 @@
+# Variable declaration
+let a = 5;
+
+# Function
+fun add(a, b) {
+    return a + b;
+}
+
+# Lambda
+let add = lambda(a, b) {
+    return a + b;
+}
+
+# For loop
+for (i from 1 to 100) {
+    print(i);
+}
+
+# If Else
+if (condition) {
+    # if true
+} else {
+    # if false
+}
+
