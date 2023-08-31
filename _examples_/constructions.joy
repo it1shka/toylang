@@ -16,6 +16,10 @@ for (i from 1 to 100) {
     print(i);
 }
 
+for (j from 5 to 25 step 5) {
+
+}
+
 # If Else
 if (condition) {
     # if true

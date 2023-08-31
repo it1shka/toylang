@@ -5,13 +5,14 @@
 using namespace lexer;
 
 const std::set<std::string> KEYWORDS {
-    "let",                  // variable declaration
-    "for", "from", "to",    // for loop
-    "while",                // while loop
-    "continue", "break",    // loop flow operators
-    "if", "else",           // if-else
-    "fun", "lambda",        // functions
-    "return"                // return value from functions
+    "let",                          // variable declaration
+    "for", "from", "to", "step",    // for loop
+    "while",                        // while loop
+    "continue", "break",            // loop flow operators
+    "if", "else",                   // if-else
+    "fun", "lambda",                // functions
+    "return",                       // return value from functions
+    "true", "false",                // boolean literals
 };
 
 const std::set<std::string> OPERATORS {
@@ -76,7 +77,7 @@ Token Lexer::readToken() {
     }
 
     // words (keywords, identifiers, some of operators)
-    if (isalpha(static_cast<int>(current))) {
+    if (isalpha(static_cast<int>(current)) || current == '_') {
         return readWordToken();
     }
 

@@ -2,8 +2,9 @@
 #include <iostream>
 #include <sstream>
 #include "lexer/lexer.h"
+#include "parser/ast.h"
 
-int main() {
+auto testLexer() -> void {
     using namespace lexer;
 
     const std::string text = R"(
@@ -27,4 +28,12 @@ int main() {
         auto token = lexer.next();
         std::cout << token.toString() << std::endl;
     }
+}
+
+auto testAST() -> void {
+    auto cock =
+}
+
+int main() {
+    testLexer();
 }
