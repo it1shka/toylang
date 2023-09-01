@@ -2,7 +2,7 @@
 
 using namespace lexer;
 
-std::string tokenTypeToString(TokenType type) {
+std::string lexer::tokenTypeToString(TokenType type) {
     using enum TokenType;
     switch (type) {
         case Keyword:     return "keyword";

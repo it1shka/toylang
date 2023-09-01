@@ -9,6 +9,8 @@ namespace lexer {
         EndOfFile, Illegal
     };
 
+    std::string tokenTypeToString(TokenType type);
+
     struct Token final {
         const TokenType type;
         const std::string value;

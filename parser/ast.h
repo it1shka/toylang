@@ -10,7 +10,7 @@
 #define EXPRESSION_TYPE(TYPE) [[nodiscard]] ExpressionType expressionType() const override { return TYPE; }
 #define NODE_NAME(NAME)       [[nodiscard]] std::string    nodeName()       const override { return NAME; }
 
-namespace AST {
+namespace parser::AST {
     // just for convenience, I will declare
     // Position as a separate shortcut type
     using Position = std::tuple<unsigned, unsigned>;
@@ -71,12 +71,13 @@ namespace AST {
 
     // Definition for all language constructs:
 
-    using Program = std::vector<Statement>;
+    // Program is a list of unique pointers to statements
+    using Program = std::vector<std::unique_ptr<Statement>>;
 
     // Statements:
     using enum Statement::StatementType;
 
-    struct VariableDeclarationStatement : Statement {
+    struct VariableDeclarationStatement final : Statement {
         NODE_NAME("variable declaration")
         STATEMENT_TYPE(VariableDeclaration)
         const std::string name;
@@ -88,7 +89,7 @@ namespace AST {
         ) : name(std::move(name)), value(std::move(value)), Statement(position) {}
     };
 
-    struct FunctionDeclarationStatement : Statement {
+    struct FunctionDeclarationStatement final : Statement {
         NODE_NAME("function declaration")
         STATEMENT_TYPE(FunctionDeclaration)
         const std::string name;
@@ -102,7 +103,7 @@ namespace AST {
         ) : name(std::move(name)), parameters(std::move(parameters)), body(std::move(body)), Statement(position) {}
     };
 
-    struct ForLoopStatement : Statement {
+    struct ForLoopStatement final : Statement {
         NODE_NAME("for loop")
         STATEMENT_TYPE(ForLoop)
         using Number = long double;
@@ -115,7 +116,7 @@ namespace AST {
         ) : parameters(std::move(parameters)), body(std::move(body)), Statement(position) {}
     };
 
-    struct WhileLoopStatement : Statement {
+    struct WhileLoopStatement final : Statement {
         NODE_NAME("while loop")
         STATEMENT_TYPE(WhileLoop)
         const std::unique_ptr<Expression> condition;
@@ -127,19 +128,19 @@ namespace AST {
         ) : condition(std::move(condition)), body(std::move(body)), Statement(position) {}
     };
 
-    struct ContinueOperatorStatement : Statement {
+    struct ContinueOperatorStatement final : Statement {
         NODE_NAME("continue operator")
         STATEMENT_TYPE(ContinueOperator)
         explicit ContinueOperatorStatement(Position position) : Statement(position) {}
     };
 
-    struct BreakOperatorStatement : Statement {
+    struct BreakOperatorStatement final : Statement {
         NODE_NAME("break operator")
         STATEMENT_TYPE(BreakOperator)
         explicit BreakOperatorStatement(Position position) : Statement(position) {}
     };
 
-    struct ReturnOperatorStatement : Statement {
+    struct ReturnOperatorStatement final : Statement {
         NODE_NAME("return operator")
         STATEMENT_TYPE(ReturnOperator)
         const std::optional<std::unique_ptr<Expression>> expression;
@@ -149,7 +150,7 @@ namespace AST {
         ) : expression(std::move(expression)), Statement(position) {}
     };
 
-    struct ExpressionStatement : Statement {
+    struct ExpressionStatement final : Statement {
         NODE_NAME("expression statement")
         STATEMENT_TYPE(BareExpression)
         const std::unique_ptr<Expression> expression;
@@ -159,20 +160,16 @@ namespace AST {
         ) : expression(std::move(expression)), Statement(position) {}
     };
 
-    struct IllegalStatement : Statement {
+    struct IllegalStatement final : Statement {
         NODE_NAME("illegal statement")
         STATEMENT_TYPE(StatementError)
-        const std::optional<std::string> reason;
-        IllegalStatement (
-            std::optional<std::string> reason,
-            Position position
-        ) : reason(std::move(reason)), Statement(position) {}
+        explicit IllegalStatement (Position position) : Statement(position) {}
     };
 
     // Expressions:
     using enum Expression::ExpressionType;
 
-    struct BinaryOperationExpression : Expression {
+    struct BinaryOperationExpression final : Expression {
         NODE_NAME("binary operation")
         EXPRESSION_TYPE(BinaryOperation)
         const std::unique_ptr<Expression> left;
@@ -186,7 +183,7 @@ namespace AST {
         ) : left(std::move(left)), right(std::move(right)), op(std::move(op)), Expression(position) {}
     };
 
-    struct UnaryOperationExpression : Expression {
+    struct UnaryOperationExpression final : Expression {
         NODE_NAME("unary operation")
         EXPRESSION_TYPE(UnaryOperation)
         const std::unique_ptr<Expression> expression;
@@ -198,7 +195,7 @@ namespace AST {
         ) : expression(std::move(expression)), op(std::move(op)), Expression(position) {}
     };
 
-    struct NumberLiteralExpression : Expression {
+    struct NumberLiteralExpression final : Expression {
         NODE_NAME("number literal")
         EXPRESSION_TYPE(NumberLiteral)
         const long double value;
@@ -208,7 +205,7 @@ namespace AST {
         ) : value(value), Expression(position) {}
     };
 
-    struct BooleanLiteralExpression : Expression {
+    struct BooleanLiteralExpression final : Expression {
         NODE_NAME("boolean literal")
         EXPRESSION_TYPE(BooleanLiteral)
         const bool value;
@@ -218,7 +215,7 @@ namespace AST {
         ) : value(value), Expression(position) {}
     };
 
-    struct VariableExpression : Expression {
+    struct VariableExpression final : Expression {
         NODE_NAME("variable")
         EXPRESSION_TYPE(Variable)
         const std::string name;
@@ -228,7 +225,7 @@ namespace AST {
         ) : name(std::move(name)), Expression(position) {}
     };
 
-    struct LambdaExpression : Expression {
+    struct LambdaExpression final : Expression {
         NODE_NAME("lambda function")
         EXPRESSION_TYPE(Lambda)
         const std::vector<std::unique_ptr<Expression>> parameters;
@@ -240,13 +237,9 @@ namespace AST {
         ) : parameters(std::move(parameters)), body(std::move(body)), Expression(position) {}
     };
 
-    struct IllegalExpression : Expression {
+    struct IllegalExpression final : Expression {
         NODE_NAME("illegal expression")
         EXPRESSION_TYPE(ExpressionError)
-        const std::optional<std::string> reason;
-        IllegalExpression (
-            std::optional<std::string> reason,
-            Position position
-        ) : reason(std::move(reason)), Expression(position) {}
+        explicit IllegalExpression (Position position) : Expression(position) {}
     };
 }

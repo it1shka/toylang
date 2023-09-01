@@ -1,16 +1,18 @@
 #pragma once
-#include <vector>
-#include "ast.h"
 #include "../lexer/lexer.h"
 
-using namespace AST;
+using namespace lexer;
+using enum TokenType;
 
 namespace parser {
     class Parser final {
         lexer::Lexer lexer;
-        std::string skipSymbol;
+        // private parsing methods
+        bool peekValueIs(const std::string &value);
+        bool peekTypeIs(TokenType type);
+        void expectValueToBe(const std::string &expectedValue);
+        std::string expectTypeToBe(TokenType expectedType);
     public:
         explicit Parser(std::istream &source);
-        [[nodiscard]] Program buildAST();
     };
 }
