@@ -44,6 +44,7 @@ namespace parser::AST {
             BreakOperator,
             ReturnOperator,
             BareExpression,
+            BlockOfStatements,
             StatementError
         };
         explicit Statement(Position position)
@@ -107,13 +108,15 @@ namespace parser::AST {
         NODE_NAME("for loop")
         STATEMENT_TYPE(ForLoop)
         using Number = long double;
+        const std::string variable;
         const std::tuple<Number, Number, Number> parameters;
         const std::unique_ptr<Statement> body;
         ForLoopStatement (
+            std::string variable,
             std::tuple<Number, Number, Number> parameters,
             std::unique_ptr<Statement> body,
             Position position
-        ) : parameters(std::move(parameters)), body(std::move(body)), Statement(position) {}
+        ) : variable(std::move(variable)), parameters(std::move(parameters)), body(std::move(body)), Statement(position) {}
     };
 
     struct WhileLoopStatement final : Statement {
@@ -154,10 +157,20 @@ namespace parser::AST {
         NODE_NAME("expression statement")
         STATEMENT_TYPE(BareExpression)
         const std::unique_ptr<Expression> expression;
-        ExpressionStatement(
+        ExpressionStatement (
             std::unique_ptr<Expression> expression,
             Position position
         ) : expression(std::move(expression)), Statement(position) {}
+    };
+
+    struct BlockStatement final : Statement {
+        NODE_NAME("block statement")
+        STATEMENT_TYPE(BlockOfStatements)
+        const std::vector<std::unique_ptr<Statement>> statements;
+        BlockStatement (
+            std::vector<std::unique_ptr<Statement>> statements,
+            Position position
+        ) : statements(std::move(statements)), Statement(position) {}
     };
 
     struct IllegalStatement final : Statement {

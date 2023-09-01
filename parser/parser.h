@@ -11,7 +11,6 @@ using enum TokenType;
 namespace parser {
     class Parser final {
         lexer::Lexer lexer;
-        std::string skipSymbol;
         std::vector<std::string> errors;
         // private parsing methods
         // statements
@@ -25,11 +24,15 @@ namespace parser {
         StatementPtr readBreakOperator();
         StatementPtr readReturnOperator();
         StatementPtr readBareExpression();
+        StatementPtr readBlockOfStatements();
+        // TODO: implement all these guys
         // expressions
         using ExpressionPtr = std::unique_ptr<Expression>;
+        ExpressionPtr readExpression();
+        // TODO: ... implement all expressions parsers
         // helper functions
         bool peekValueIs(const std::string &value);
-        bool peekTypeIs(TokenType type);
+        bool nextIfValue(const std::string &value);
         void expectValueToBe(const std::string &expectedValue);
         std::string expectTypeToBe(TokenType expectedType);
         void performSkip();
