@@ -4,8 +4,8 @@ using namespace parser;
 using namespace AST;
 
 Parser::Parser(std::istream &input) :
-    lexer(input) {}
+    lexer(input), skipSymbol(";") {}
 
 Program Parser::buildAST() {
-    // TODO: ...
+
 }
