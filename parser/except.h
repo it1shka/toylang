@@ -11,7 +11,6 @@ namespace parser::exceptions {
     public:
         WrongTokenValueException (const std::string &expected, const std::string &actual)
                 : message("Expected token value '" + expected + "', '" + actual + "' was provided") {}
-
         [[nodiscard]] const char* what() const noexcept override {
             return message.c_str();
         }
