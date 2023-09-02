@@ -13,21 +13,21 @@ namespace parser {
         lexer::Lexer lexer;
         std::vector<std::string> errors;
         // private parsing methods
-        // statements
         using StatementPtr = std::unique_ptr<Statement>;
-        StatementPtr readStatement();
-        StatementPtr readVariableDeclaration();
-        StatementPtr readFunctionDeclaration();
-        StatementPtr readForLoop();
-        StatementPtr readWhileLoop();
-        StatementPtr readContinueOperator();
-        StatementPtr readBreakOperator();
-        StatementPtr readReturnOperator();
-        StatementPtr readBareExpression();
-        StatementPtr readBlockOfStatements();
-        // TODO: implement all these guys
-        // expressions
         using ExpressionPtr = std::unique_ptr<Expression>;
+        // statements
+        StatementPtr readStatement();
+        StatementPtr readVariableDeclaration() noexcept;
+        StatementPtr readFunctionDeclaration() noexcept;
+        std::vector<ExpressionPtr> readFunctionArgList();
+        StatementPtr readForLoop() noexcept;
+        StatementPtr readWhileLoop() noexcept;
+        StatementPtr readContinueOperator() noexcept;
+        StatementPtr readBreakOperator() noexcept;
+        StatementPtr readReturnOperator() noexcept;
+        StatementPtr readBareExpression() noexcept;
+        StatementPtr readBlockOfStatements() noexcept;
+        // expressions
         ExpressionPtr readExpression();
         // TODO: ... implement all expressions parsers
         // helper functions

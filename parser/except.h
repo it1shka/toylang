@@ -32,4 +32,29 @@ namespace parser::exceptions {
             return message.c_str();
         }
     };
+
+    class ForLoopZeroStepException final : public ParserException {
+    public:
+        [[nodiscard]] const char* what() const noexcept override {
+            return "Step in for loop cannot be 0";
+        }
+    };
+
+    class ForLoopIncompatibleStepException final : public ParserException {
+        const std::string message;
+        [[nodiscard]] static std::string createMessage(bool flag) {
+            std::string base = "Incompatible step in for loop, ";
+            auto result = base + (flag
+                    ? "step should be positive"
+                    : "step should be negative");
+            return result;
+        }
+    public:
+        explicit ForLoopIncompatibleStepException(bool flag)
+            : message(createMessage(flag)) {}
+        [[nodiscard]] const char* what() const noexcept override {
+            return message.c_str();
+        }
+    };
+
 }
