@@ -1,15 +1,8 @@
 #include "parser.h"
-#include "ast.h"
 #include "except.h"
 
-using namespace lexer;
-using enum TokenType;
 using namespace parser;
-using namespace parser::AST;
 using namespace parser::exceptions;
-
-using ExpressionPtr = std::unique_ptr<Expression>;
-using StatementPtr = std::unique_ptr<Statement>;
 
 #define CATCHING_BLOCK                                                   \
     const auto startPosition = lexer.peek().position;                    \

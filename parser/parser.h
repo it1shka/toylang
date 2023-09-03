@@ -8,13 +8,13 @@ using namespace lexer;
 using namespace parser::AST;
 using enum TokenType;
 
+using StatementPtr = std::unique_ptr<Statement>;
+using ExpressionPtr = std::unique_ptr<Expression>;
+
 namespace parser {
     class Parser final {
         lexer::Lexer lexer;
         std::vector<std::string> errors;
-        // private parsing methods
-        using StatementPtr = std::unique_ptr<Statement>;
-        using ExpressionPtr = std::unique_ptr<Expression>;
         // statements
         StatementPtr readStatement();
         StatementPtr readVariableDeclaration() noexcept;

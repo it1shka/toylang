@@ -20,7 +20,9 @@ const std::set<std::string> OPERATORS {
     "or", "and",
     "==", "!=",
     "<", ">", "<=", ">=",
-    "-", "+", "*", "/", "mod",
+    "-", "+", "*", "/",
+    "div", "mod",
+    "^",
     "not",
 };
 
@@ -98,7 +100,7 @@ Token Lexer::readToken() {
 
     // Non-alpha operators
     switch(current) {
-        case '=': case '+': case '-':
+        case '=': case '+': case '-': case '^':
         case '*': case '/': case '>': case '<':
             value += buffer.next();
             if (buffer.peek() == '=') value += buffer.next();
