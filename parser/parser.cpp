@@ -35,7 +35,7 @@ using namespace parser::exceptions;
 // public interface
 
 Parser::Parser(std::istream &input) :
-    lexer(input), errors({}) {}
+    lexer(input), errors({}), expressionParser(compileParser()) {}
 
 const std::vector<std::string>& Parser::getErrors() const {
     return errors;
@@ -199,8 +199,50 @@ StatementPtr Parser::readBlockOfStatements() noexcept {
 
 // expressions
 
-ExpressionPtr Parser::readExpression() {
-    // TODO: Implement parsing expressions
+ExpressionPtr Parser::readExpression() noexcept {
+    CATCHING_BLOCK
+        return expressionParser();
+    END_CATCHING_BLOCK(IllegalExpression, "expression")
+}
+
+ExpressionPtr Parser::readLeftBinOp(const std::set<std::string> &ops, const ExpressionParser &parser) {
+    const auto startPosition = lexer.peek().position;
+    auto left = parser();
+    while (ops.contains(lexer.peek().value)) {
+        const auto op = lexer.next().value;
+        auto right = parser();
+        const auto binOp = new BinaryOperationExpression(std::move(left), std::move(right), op, startPosition);
+        left = std::unique_ptr<BinaryOperationExpression>(binOp);
+    }
+    return left;
+}
+
+ExpressionPtr Parser::readRightBinOp(const std::set<std::string> &ops, const ExpressionParser &parser) {
+    const auto startPosition = lexer.peek().position;
+    auto left = parser();
+    if (ops.contains(lexer.peek().value)) {
+        const auto op = lexer.next().value;
+        auto right = readRightBinOp(ops, parser);
+        const auto binOp = new BinaryOperationExpression(std::move(left), std::move(right), op, startPosition);
+        left = std::unique_ptr<BinaryOperationExpression>(binOp);
+    }
+    return left;
+}
+
+ExpressionPtr Parser::readAtomicExpression() {
+
+}
+
+ExpressionPtr Parser::readUnitExpression() {
+
+}
+
+ExpressionPtr Parser::readPrefixOperator() {
+
+}
+
+ExpressionPtr Parser::readPostfixOperator() {
+
 }
 
 // TODO: implement all expression parsers
@@ -241,4 +283,45 @@ void Parser::performSkip() {
         const auto type = lexer.next().type;
         if (type == Punctuation) return;
     }
+}
+
+// I will compile rules for binary operators in runtime
+// I don't think I can do that effectively in comptime using a macro
+
+struct ParserParameter {
+    enum class Associativity { Left, Right };
+    const std::set<std::string> operators;
+    const Associativity associativity;
+};
+
+using enum ParserParameter::Associativity;
+
+const std::vector<ParserParameter> parserParameters {
+        {{"^"},                               Right },
+        {{"*", "/", "div", "mod"},            Left  },
+        {{"+", "-"},                          Left  },
+        {{">", "<", ">=", "<="},              Left  },
+        {{"==", "!="},                        Left  },
+        {{"and"},                             Left  },
+        {{"or"},                              Left  },
+        {{"=", "+=", "-=", "*=", "/=", "^="}, Left  },
+};
+
+ExpressionParser Parser::compileParser() {
+    ExpressionParser parser = [this]() { return readAtomicExpression(); };
+    for (const auto &param : parserParameters) {
+        ExpressionParser nextParser;
+        const auto ops = param.operators;
+        if (param.associativity == Left) {
+            nextParser = [this, ops, parser]() {
+                return readLeftBinOp(ops, parser);
+            };
+        } else {
+            nextParser = [this, ops, parser]() {
+                return readRightBinOp(ops, parser);
+            };
+        }
+        parser = nextParser;
+    }
+    return parser;
 }

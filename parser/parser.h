@@ -1,6 +1,7 @@
 #pragma once
 #include "../lexer/lexer.h"
 #include <vector>
+#include <set>
 #include <string>
 #include "ast.h"
 
@@ -10,11 +11,13 @@ using enum TokenType;
 
 using StatementPtr = std::unique_ptr<Statement>;
 using ExpressionPtr = std::unique_ptr<Expression>;
+using ExpressionParser = std::function<ExpressionPtr()>;
 
 namespace parser {
     class Parser final {
         lexer::Lexer lexer;
         std::vector<std::string> errors;
+        const ExpressionParser expressionParser;
         // statements
         StatementPtr readStatement();
         StatementPtr readVariableDeclaration() noexcept;
@@ -28,14 +31,21 @@ namespace parser {
         StatementPtr readBareExpression() noexcept;
         StatementPtr readBlockOfStatements() noexcept;
         // expressions
-        ExpressionPtr readExpression();
-        // TODO: ... implement all expressions parsers
+        ExpressionPtr readExpression() noexcept;
+        ExpressionPtr readLeftBinOp(const std::set<std::string> &ops, const ExpressionParser &next);
+        ExpressionPtr readRightBinOp(const std::set<std::string> &ops, const ExpressionParser &next);
+        ExpressionPtr readAtomicExpression();
+        ExpressionPtr readUnitExpression();
+        ExpressionPtr readPrefixOperator();
+        ExpressionPtr readPostfixOperator();
+        // TODO: implement all that shit
         // helper functions
         bool peekValueIs(const std::string &value);
         bool nextIfValue(const std::string &value);
         void expectValueToBe(const std::string &expectedValue);
         std::string expectTypeToBe(TokenType expectedType);
         void performSkip();
+        ExpressionParser compileParser();
     public:
         // public interface
         explicit Parser(std::istream &source);
