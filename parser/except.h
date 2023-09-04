@@ -57,4 +57,18 @@ namespace parser::exceptions {
         }
     };
 
+    class IllegalAtomicException final : public ParserException {
+        const std::string message;
+        [[nodiscard]] static std::string createMessage(const Token &token) {
+            return std::string("Expected boolean, number, lambda or group expression")
+                + ", found: " + token.toString();
+        }
+    public:
+        explicit IllegalAtomicException(const Token &token)
+            : message(createMessage(token)) {}
+        [[nodiscard]] const char* what() const noexcept override {
+            return message.c_str();
+        }
+    };
+
 }

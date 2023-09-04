@@ -34,13 +34,14 @@ namespace parser {
         ExpressionPtr readExpression() noexcept;
         ExpressionPtr readLeftBinOp(const std::set<std::string> &ops, const ExpressionParser &next);
         ExpressionPtr readRightBinOp(const std::set<std::string> &ops, const ExpressionParser &next);
-        ExpressionPtr readAtomicExpression();
-        ExpressionPtr readUnitExpression();
-        ExpressionPtr readPrefixOperator();
-        ExpressionPtr readPostfixOperator();
+        ExpressionPtr readPrefixOperation();
+        ExpressionPtr readPostfixOperation();
+        ExpressionPtr readAtomicExpression() noexcept;
+        ExpressionPtr readLambdaExpression() noexcept;
         // TODO: implement all that shit
         // helper functions
         bool peekValueIs(const std::string &value);
+        bool peekTypeIs(TokenType type);
         bool nextIfValue(const std::string &value);
         void expectValueToBe(const std::string &expectedValue);
         std::string expectTypeToBe(TokenType expectedType);

@@ -57,7 +57,8 @@ namespace parser::AST {
         NODE_NAME("expression")
         enum class ExpressionType {
             BinaryOperation,
-            UnaryOperation,
+            PrefixOperation,
+            Call,
             NumberLiteral,
             BooleanLiteral,
             Lambda,
@@ -196,16 +197,28 @@ namespace parser::AST {
         ) : left(std::move(left)), right(std::move(right)), op(std::move(op)), Expression(position) {}
     };
 
-    struct UnaryOperationExpression final : Expression {
-        NODE_NAME("unary operation")
-        EXPRESSION_TYPE(UnaryOperation)
+    struct PrefixOperationExpression final : Expression {
+        NODE_NAME("prefix operation")
+        EXPRESSION_TYPE(PrefixOperation)
         const std::unique_ptr<Expression> expression;
         const std::string op;
-        UnaryOperationExpression (
+        PrefixOperationExpression (
             std::unique_ptr<Expression> expression,
             std::string op,
             Position position
         ) : expression(std::move(expression)), op(std::move(op)), Expression(position) {}
+    };
+
+    struct CallExpression final : Expression {
+        NODE_NAME("functional call")
+        EXPRESSION_TYPE(Call)
+        const std::unique_ptr<Expression> target;
+        const std::vector<std::unique_ptr<Expression>> arguments;
+        CallExpression (
+            std::unique_ptr<Expression> target,
+            std::vector<std::unique_ptr<Expression>> arguments,
+            Position position
+        ) : target(std::move(target)), arguments(std::move(arguments)), Expression(position) {}
     };
 
     struct NumberLiteralExpression final : Expression {

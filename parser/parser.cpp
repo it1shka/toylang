@@ -1,4 +1,6 @@
 #include "parser.h"
+
+#include <memory>
 #include "except.h"
 
 using namespace parser;
@@ -84,7 +86,7 @@ StatementPtr Parser::readFunctionDeclaration() noexcept {
         expectValueToBe("fun");
         const auto name = expectTypeToBe(Identifier);
         auto paramList = readFunctionArgList();
-        auto body = readStatement();
+        auto body = readBlockOfStatements();
         const auto declaration = new FunctionDeclarationStatement(name, std::move(paramList), std::move(body), startPosition);
         return std::unique_ptr<FunctionDeclarationStatement>(declaration);
     END_CATCHING_BLOCK(IllegalStatement, "function declaration")
@@ -178,6 +180,7 @@ StatementPtr Parser::readReturnOperator() noexcept {
 StatementPtr Parser::readBareExpression() noexcept {
     CATCHING_BLOCK
         auto expression = readExpression();
+        expectValueToBe(";");
         const auto bare = new ExpressionStatement(std::move(expression), startPosition);
         return std::unique_ptr<ExpressionStatement>(bare);
     END_CATCHING_BLOCK(IllegalStatement, "bare expression")
@@ -229,20 +232,65 @@ ExpressionPtr Parser::readRightBinOp(const std::set<std::string> &ops, const Exp
     return left;
 }
 
-ExpressionPtr Parser::readAtomicExpression() {
+const std::set<std::string> PREFIX_OPERATORS {
+    "not", "-"
+};
 
+ExpressionPtr Parser::readPrefixOperation() {
+    const auto startPosition = lexer.peek().position;
+    if (PREFIX_OPERATORS.contains(lexer.peek().value)) {
+        const auto op = lexer.next().value;
+        auto nested = readPrefixOperation();
+        const auto prefOp = new PrefixOperationExpression(std::move(nested), op, startPosition);
+        return std::unique_ptr<PrefixOperationExpression>(prefOp);
+    }
+    return readPostfixOperation();
 }
 
-ExpressionPtr Parser::readUnitExpression() {
-
+ExpressionPtr Parser::readPostfixOperation() {
+    const auto startPosition = lexer.peek().position;
+    auto expression = readAtomicExpression();
+    while (peekValueIs("(")) {
+        auto argList = readFunctionArgList();
+        const auto call = new CallExpression(std::move(expression), std::move(argList), startPosition);
+        expression = std::unique_ptr<CallExpression>(call);
+    }
+    return expression;
 }
 
-ExpressionPtr Parser::readPrefixOperator() {
-
+ExpressionPtr Parser::readAtomicExpression() noexcept {
+    CATCHING_BLOCK
+        if (nextIfValue("true")) {
+            return std::make_unique<BooleanLiteralExpression>(true, startPosition);
+        }
+        if (nextIfValue("false")) {
+            return std::make_unique<BooleanLiteralExpression>(false, startPosition);
+        }
+        if (nextIfValue("(")) {
+            auto expression = readExpression();
+            expectValueToBe(")");
+            return expression;
+        }
+        if (peekValueIs("lambda")) {
+            return readLambdaExpression();
+        }
+        if (peekTypeIs(Number)) {
+            const auto value = std::stold(lexer.next().value);
+            const auto num = new NumberLiteralExpression(value, startPosition);
+            return std::unique_ptr<NumberLiteralExpression>(num);
+        }
+        throw IllegalAtomicException(lexer.peek());
+    END_CATCHING_BLOCK(IllegalExpression, "atomic expression")
 }
 
-ExpressionPtr Parser::readPostfixOperator() {
-
+ExpressionPtr Parser::readLambdaExpression() noexcept {
+    CATCHING_BLOCK
+        expectValueToBe("lambda");
+        auto argList = readFunctionArgList();
+        auto body = readBlockOfStatements();
+        const auto lm = new LambdaExpression(std::move(argList), std::move(body), startPosition);
+        return std::unique_ptr<LambdaExpression>(lm);
+    END_CATCHING_BLOCK(IllegalExpression, "lambda expression")
 }
 
 // TODO: implement all expression parsers
@@ -252,6 +300,11 @@ ExpressionPtr Parser::readPostfixOperator() {
 bool Parser::peekValueIs(const std::string &value) {
     const auto peek = lexer.peek();
     return peek.value == value;
+}
+
+bool Parser::peekTypeIs(TokenType type) {
+    const auto peek = lexer.peek();
+    return peek.type == type;
 }
 
 bool Parser::nextIfValue(const std::string &value) {
@@ -296,7 +349,7 @@ struct ParserParameter {
 
 using enum ParserParameter::Associativity;
 
-const std::vector<ParserParameter> parserParameters {
+const std::vector<ParserParameter> PARSER_PARAMETERS {
         {{"^"},                               Right },
         {{"*", "/", "div", "mod"},            Left  },
         {{"+", "-"},                          Left  },
@@ -308,16 +361,16 @@ const std::vector<ParserParameter> parserParameters {
 };
 
 ExpressionParser Parser::compileParser() {
-    ExpressionParser parser = [this]() { return readAtomicExpression(); };
-    for (const auto &param : parserParameters) {
+    ExpressionParser parser = [this]() -> ExpressionPtr { return readPrefixOperation(); };
+    for (const auto &param : PARSER_PARAMETERS) {
         ExpressionParser nextParser;
         const auto ops = param.operators;
         if (param.associativity == Left) {
-            nextParser = [this, ops, parser]() {
+            nextParser = [this, ops, parser]() -> ExpressionPtr {
                 return readLeftBinOp(ops, parser);
             };
         } else {
-            nextParser = [this, ops, parser]() {
+            nextParser = [this, ops, parser]() -> ExpressionPtr {
                 return readRightBinOp(ops, parser);
             };
         }
