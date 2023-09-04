@@ -4,12 +4,13 @@
 #include "parser/parser.h"
 
 const std::string sample = R"(
-        fun main() {
-            let a = 1 + 2 * 3 + 4 + (5 * 6 ^ 7);
-            print(a);
+        fun sum(a, b) {
+            let output = 0.1120000;
+            for (_i from a to b) {
+                output += _i;
+            }
+            return output;
         }
-
-        main();
     )";
 
 int main() {

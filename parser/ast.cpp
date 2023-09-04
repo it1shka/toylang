@@ -3,6 +3,7 @@
 // so i put all of them right here
 
 #include "ast.h"
+#include "../utils.h"
 
 using namespace parser::AST;
 
@@ -142,8 +143,7 @@ DEF_PRINT_FOR(CallExpression) {
 }
 
 DEF_PRINT_FOR(NumberLiteralExpression) {
-    // TODO: print without trailing zeroes
-    printer << std::to_string(value);
+    printer << utils::formatNumber(value);
 }
 
 DEF_PRINT_FOR(BooleanLiteralExpression) {
