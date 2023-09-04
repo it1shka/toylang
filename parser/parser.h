@@ -9,8 +9,6 @@ using namespace lexer;
 using namespace parser::AST;
 using enum TokenType;
 
-using StatementPtr = std::unique_ptr<Statement>;
-using ExpressionPtr = std::unique_ptr<Expression>;
 using ExpressionParser = std::function<ExpressionPtr()>;
 
 namespace parser {
