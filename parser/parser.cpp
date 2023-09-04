@@ -279,6 +279,11 @@ ExpressionPtr Parser::readAtomicExpression() noexcept {
             const auto num = new NumberLiteralExpression(value, startPosition);
             return std::unique_ptr<NumberLiteralExpression>(num);
         }
+        if (peekTypeIs(Identifier)) {
+            const auto name = lexer.next().value;
+            const auto var = new VariableExpression(name, startPosition);
+            return std::unique_ptr<VariableExpression>(var);
+        }
         throw IllegalAtomicException(lexer.peek());
     END_CATCHING_BLOCK(IllegalExpression, "atomic expression")
 }

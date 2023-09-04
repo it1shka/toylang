@@ -6,6 +6,7 @@
 #include <optional>
 #include <memory>
 
+#define NODE_TYPE(TYPE)       [[nodiscard]] NodeType       nodeType()       const override { return TYPE; }
 #define STATEMENT_TYPE(TYPE)  [[nodiscard]] StatementType  statementType()  const override { return TYPE; }
 #define EXPRESSION_TYPE(TYPE) [[nodiscard]] ExpressionType expressionType() const override { return TYPE; }
 #define NODE_NAME(NAME)       [[nodiscard]] std::string    nodeName()       const override { return NAME; }
@@ -17,6 +18,10 @@ namespace parser::AST {
 
     // Base struct for all AST constructs
     struct Node {
+        enum class NodeType {
+            StatementNode,
+            ExpressionNode,
+        };
         const Position position;
         explicit Node(Position position)
             : position(std::move(position)) {}
@@ -30,11 +35,13 @@ namespace parser::AST {
             return name + " at (line " + std::to_string(line) +
                 ", column " + std::to_string(column) + ")";
         }
+        [[nodiscard]] virtual NodeType nodeType() const = 0;
     };
 
     // Two base structs for Statements and Expressions in language
     struct Statement : Node {
         NODE_NAME("statement")
+        NODE_TYPE(NodeType::StatementNode)
         enum class StatementType {
             VariableDeclaration,
             FunctionDeclaration,
@@ -55,6 +62,7 @@ namespace parser::AST {
 
     struct Expression : Node {
         NODE_NAME("expression")
+        NODE_TYPE(NodeType::ExpressionNode)
         enum class ExpressionType {
             BinaryOperation,
             PrefixOperation,
