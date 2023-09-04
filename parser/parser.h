@@ -25,6 +25,7 @@ namespace parser {
         std::vector<ExpressionPtr> readFunctionArgList();
         StatementPtr readForLoop() noexcept;
         StatementPtr readWhileLoop() noexcept;
+        StatementPtr readIfElseStatement() noexcept;
         StatementPtr readContinueOperator() noexcept;
         StatementPtr readBreakOperator() noexcept;
         StatementPtr readReturnOperator() noexcept;
@@ -38,7 +39,6 @@ namespace parser {
         ExpressionPtr readPostfixOperation();
         ExpressionPtr readAtomicExpression() noexcept;
         ExpressionPtr readLambdaExpression() noexcept;
-        // TODO: implement all that shit
         // helper functions
         bool peekValueIs(const std::string &value);
         bool peekTypeIs(TokenType type);

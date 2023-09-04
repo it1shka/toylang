@@ -17,14 +17,19 @@ std::string lexer::tokenTypeToString(TokenType type) {
 }
 
 std::string Token::toString() const {
-    auto output = tokenTypeToString(type);
+    const auto output = toStringShort();
     const auto [line, column] = position;
-    if (type != TokenType::EndOfFile) {
-        output += " '" + value + "'";
-    }
     return (
             output +
             " at (line " + std::to_string(line) +
             ", column " + std::to_string(column) + ")"
     );
+}
+
+std::string Token::toStringShort() const {
+    auto output = tokenTypeToString(type);
+    if (type != TokenType::EndOfFile) {
+        output += " '" + value + "'";
+    }
+    return output;
 }

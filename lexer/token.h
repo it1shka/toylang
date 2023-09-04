@@ -16,5 +16,6 @@ namespace lexer {
         const std::string value;
         const std::tuple<unsigned, unsigned> position;
         [[nodiscard]] std::string toString() const;
+        [[nodiscard]] std::string toStringShort() const;
     };
 }

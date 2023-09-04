@@ -16,7 +16,7 @@ namespace parser::AST {
     // Position as a separate shortcut type
     using Position = std::tuple<unsigned, unsigned>;
 
-    // Base struct for all AST constructs
+    // Abstract base struct for all AST constructs
     struct Node {
         enum class NodeType {
             StatementNode,
@@ -38,7 +38,7 @@ namespace parser::AST {
         [[nodiscard]] virtual NodeType nodeType() const = 0;
     };
 
-    // Two base structs for Statements and Expressions in language
+    // Abstract base struct for all statements
     struct Statement : Node {
         NODE_NAME("statement")
         NODE_TYPE(NodeType::StatementNode)
@@ -47,6 +47,7 @@ namespace parser::AST {
             FunctionDeclaration,
             ForLoop,
             WhileLoop,
+            IfElse,
             ContinueOperator,
             BreakOperator,
             ReturnOperator,
@@ -60,6 +61,7 @@ namespace parser::AST {
         virtual ~Statement() = default;
     };
 
+    // Abstract base struct for all expressions
     struct Expression : Node {
         NODE_NAME("expression")
         NODE_TYPE(NodeType::ExpressionNode)
@@ -79,10 +81,14 @@ namespace parser::AST {
         virtual ~Expression() = default;
     };
 
+    // to keep my code concise, I define two new types:
+    using StatementPtr = std::unique_ptr<Statement>;
+    using ExpressionPtr = std::unique_ptr<Expression>;
+
     // Definition for all language constructs:
 
     // Program is a list of unique pointers to statements
-    using Program = std::vector<std::unique_ptr<Statement>>;
+    using Program = std::vector<StatementPtr>;
 
     // Statements:
     using enum Statement::StatementType;
@@ -91,10 +97,10 @@ namespace parser::AST {
         NODE_NAME("variable declaration")
         STATEMENT_TYPE(VariableDeclaration)
         const std::string name;
-        const std::optional<std::unique_ptr<Expression>> value;
+        const std::optional<ExpressionPtr> value;
         VariableDeclarationStatement (
             std::string name,
-            std::optional<std::unique_ptr<Expression>> value,
+            std::optional<ExpressionPtr> value,
             Position position
         ) : name(std::move(name)), value(std::move(value)), Statement(position) {}
     };
@@ -103,12 +109,12 @@ namespace parser::AST {
         NODE_NAME("function declaration")
         STATEMENT_TYPE(FunctionDeclaration)
         const std::string name;
-        const std::vector<std::unique_ptr<Expression>> parameters;
-        const std::unique_ptr<Statement> body;
+        const std::vector<ExpressionPtr> parameters;
+        const StatementPtr body;
         FunctionDeclarationStatement (
             std::string name,
-            std::vector<std::unique_ptr<Expression>> parameters,
-            std::unique_ptr<Statement> body,
+            std::vector<ExpressionPtr> parameters,
+            StatementPtr body,
             Position position
         ) : name(std::move(name)), parameters(std::move(parameters)), body(std::move(body)), Statement(position) {}
     };
@@ -116,28 +122,45 @@ namespace parser::AST {
     struct ForLoopStatement final : Statement {
         NODE_NAME("for loop")
         STATEMENT_TYPE(ForLoop)
-        using Number = long double;
         const std::string variable;
-        const std::tuple<Number, Number, Number> parameters;
-        const std::unique_ptr<Statement> body;
+        const ExpressionPtr start;
+        const ExpressionPtr end;
+        const std::optional<ExpressionPtr> step;
+        const StatementPtr body;
         ForLoopStatement (
             std::string variable,
-            std::tuple<Number, Number, Number> parameters,
-            std::unique_ptr<Statement> body,
+            ExpressionPtr start, ExpressionPtr end, std::optional<ExpressionPtr> step,
+            StatementPtr body,
             Position position
-        ) : variable(std::move(variable)), parameters(std::move(parameters)), body(std::move(body)), Statement(position) {}
+        ) : variable(std::move(variable)), start(std::move(start)),
+            end(std::move(end)),           step(std::move(step)),
+            body(std::move(body)),         Statement(std::move(position)) {}
     };
 
     struct WhileLoopStatement final : Statement {
         NODE_NAME("while loop")
         STATEMENT_TYPE(WhileLoop)
-        const std::unique_ptr<Expression> condition;
-        const std::unique_ptr<Statement> body;
+        const ExpressionPtr condition;
+        const StatementPtr body;
         WhileLoopStatement (
-            std::unique_ptr<Expression> condition,
-            std::unique_ptr<Statement> body,
+            ExpressionPtr condition,
+            StatementPtr body,
             Position position
         ) : condition(std::move(condition)), body(std::move(body)), Statement(position) {}
+    };
+
+    struct IfElseStatement final : Statement {
+        NODE_NAME("if-else statement")
+        STATEMENT_TYPE(IfElse)
+        const ExpressionPtr condition;
+        const StatementPtr mainClause;
+        const std::optional<StatementPtr> elseClause;
+        IfElseStatement (
+            ExpressionPtr condition,
+            StatementPtr mainClause,
+            std::optional<StatementPtr> elseClause,
+            Position position
+        ) : condition(std::move(condition)), mainClause(std::move(mainClause)), elseClause(std::move(elseClause)), Statement(position) {}
     };
 
     struct ContinueOperatorStatement final : Statement {
@@ -155,9 +178,9 @@ namespace parser::AST {
     struct ReturnOperatorStatement final : Statement {
         NODE_NAME("return operator")
         STATEMENT_TYPE(ReturnOperator)
-        const std::optional<std::unique_ptr<Expression>> expression;
+        const std::optional<ExpressionPtr> expression;
         ReturnOperatorStatement (
-            std::optional<std::unique_ptr<Expression>> expression,
+            std::optional<ExpressionPtr> expression,
             Position position
         ) : expression(std::move(expression)), Statement(position) {}
     };
@@ -165,9 +188,9 @@ namespace parser::AST {
     struct ExpressionStatement final : Statement {
         NODE_NAME("expression statement")
         STATEMENT_TYPE(BareExpression)
-        const std::unique_ptr<Expression> expression;
+        const ExpressionPtr expression;
         ExpressionStatement (
-            std::unique_ptr<Expression> expression,
+            ExpressionPtr expression,
             Position position
         ) : expression(std::move(expression)), Statement(position) {}
     };
@@ -175,9 +198,9 @@ namespace parser::AST {
     struct BlockStatement final : Statement {
         NODE_NAME("block statement")
         STATEMENT_TYPE(BlockOfStatements)
-        const std::vector<std::unique_ptr<Statement>> statements;
+        const std::vector<StatementPtr> statements;
         BlockStatement (
-            std::vector<std::unique_ptr<Statement>> statements,
+            std::vector<StatementPtr> statements,
             Position position
         ) : statements(std::move(statements)), Statement(position) {}
     };
@@ -194,12 +217,12 @@ namespace parser::AST {
     struct BinaryOperationExpression final : Expression {
         NODE_NAME("binary operation")
         EXPRESSION_TYPE(BinaryOperation)
-        const std::unique_ptr<Expression> left;
-        const std::unique_ptr<Expression> right;
+        const ExpressionPtr left;
+        const ExpressionPtr right;
         const std::string op;
         BinaryOperationExpression (
-            std::unique_ptr<Expression> left,
-            std::unique_ptr<Expression> right,
+            ExpressionPtr left,
+            ExpressionPtr right,
             std::string op,
             Position position
         ) : left(std::move(left)), right(std::move(right)), op(std::move(op)), Expression(position) {}
@@ -208,10 +231,10 @@ namespace parser::AST {
     struct PrefixOperationExpression final : Expression {
         NODE_NAME("prefix operation")
         EXPRESSION_TYPE(PrefixOperation)
-        const std::unique_ptr<Expression> expression;
+        const ExpressionPtr expression;
         const std::string op;
         PrefixOperationExpression (
-            std::unique_ptr<Expression> expression,
+            ExpressionPtr expression,
             std::string op,
             Position position
         ) : expression(std::move(expression)), op(std::move(op)), Expression(position) {}
@@ -220,11 +243,11 @@ namespace parser::AST {
     struct CallExpression final : Expression {
         NODE_NAME("functional call")
         EXPRESSION_TYPE(Call)
-        const std::unique_ptr<Expression> target;
-        const std::vector<std::unique_ptr<Expression>> arguments;
+        const ExpressionPtr target;
+        const std::vector<ExpressionPtr> arguments;
         CallExpression (
-            std::unique_ptr<Expression> target,
-            std::vector<std::unique_ptr<Expression>> arguments,
+            ExpressionPtr target,
+            std::vector<ExpressionPtr> arguments,
             Position position
         ) : target(std::move(target)), arguments(std::move(arguments)), Expression(position) {}
     };
@@ -262,11 +285,11 @@ namespace parser::AST {
     struct LambdaExpression final : Expression {
         NODE_NAME("lambda function")
         EXPRESSION_TYPE(Lambda)
-        const std::vector<std::unique_ptr<Expression>> parameters;
-        const std::unique_ptr<Statement> body;
+        const std::vector<ExpressionPtr> parameters;
+        const StatementPtr body;
         LambdaExpression (
-            std::vector<std::unique_ptr<Expression>> parameters,
-            std::unique_ptr<Statement> body,
+            std::vector<ExpressionPtr> parameters,
+            StatementPtr body,
             Position position
         ) : parameters(std::move(parameters)), body(std::move(body)), Expression(position) {}
     };

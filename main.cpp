@@ -1,35 +1,24 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
-#include "lexer/lexer.h"
-#include "parser/ast.h"
+#include "parser/parser.h"
 
-auto testLexer() -> void {
-    using namespace lexer;
-
-    const std::string text = R"(
-        fun factorial(n) {
-            let output = 1;
-            for (i from 1 to n) {
-                output *= i;
+const std::string sample = R"(
+        fun main() {
+            let start = 1;
+            let end = 10;
+            for (i from start to end step 2) {
+                print(i)
             }
-            return output;
         }
-
-        let user_input = get_number();
-        let result = factorial(user_input);
-        print(result);
+        main();
     )";
 
-    auto stream = std::istringstream(text);
-    auto lexer = Lexer(stream);
-
-    while (!lexer.eof()) {
-        auto token = lexer.next();
-        std::cout << token.toString() << std::endl;
-    }
-}
-
 int main() {
-    testLexer();
+    std::istringstream stream(sample);
+    auto parser = parser::Parser(stream);
+    parser.buildAST();
+    for (const auto &each : parser.getErrors()) {
+        std::cout << each << std::endl;
+    }
 }

@@ -60,6 +60,7 @@ StatementPtr Parser::readStatement() {
     if (currentValue == "fun"     ) return readFunctionDeclaration();
     if (currentValue == "for"     ) return readForLoop();
     if (currentValue == "while"   ) return readWhileLoop();
+    if (currentValue == "if"      ) return readIfElseStatement();
     if (currentValue == "continue") return readContinueOperator();
     if (currentValue == "break"   ) return readBreakOperator();
     if (currentValue == "return"  ) return readReturnOperator();
@@ -71,7 +72,7 @@ StatementPtr Parser::readVariableDeclaration() noexcept {
     CATCHING_BLOCK
         expectValueToBe("let");
         const auto identifier = expectTypeToBe(Identifier);
-        std::optional<std::unique_ptr<Expression>> init(std::nullopt);
+        std::optional<ExpressionPtr> init(std::nullopt);
         if (nextIfValue("=")) {
             init = readExpression();
         }
@@ -111,23 +112,18 @@ StatementPtr Parser::readForLoop() noexcept {
         const auto variable = expectTypeToBe(Identifier);
 
         expectValueToBe("from");
-        const auto start = std::stold(expectTypeToBe(Number));
+        auto start = readExpression();
         expectValueToBe("to");
-        const auto end = std::stold(expectTypeToBe(Number));
+        auto end = readExpression();
 
-        long double step = 1;
+        std::optional<ExpressionPtr> step = std::nullopt;
         if (nextIfValue("step")) {
-            step = std::stold(expectTypeToBe(Number));
-            if (step == 0) throw ForLoopZeroStepException();
-            if (start < end && step < 0) throw ForLoopIncompatibleStepException(true);
-            if (start > end && step > 0) throw ForLoopIncompatibleStepException(false);
+            step = readExpression();
         }
         expectValueToBe(")");
 
-        const auto parameters = std::tuple{start, end, step};
         auto body = readStatement();
-
-        const auto loop = new ForLoopStatement(variable, parameters, std::move(body), startPosition);
+        const auto loop = new ForLoopStatement(variable, std::move(start), std::move(end), std::move(step), std::move(body), startPosition);
         return std::unique_ptr<ForLoopStatement>(loop);
     END_CATCHING_BLOCK(IllegalStatement, "for loop")
 }
@@ -139,10 +135,25 @@ StatementPtr Parser::readWhileLoop() noexcept {
         auto condition = readExpression();
         expectValueToBe(")");
         auto body = readStatement();
-
         const auto loop = new WhileLoopStatement(std::move(condition), std::move(body), startPosition);
         return std::unique_ptr<WhileLoopStatement>(loop);
     END_CATCHING_BLOCK(IllegalStatement, "while loop")
+}
+
+StatementPtr Parser::readIfElseStatement() noexcept {
+    CATCHING_BLOCK
+        expectValueToBe("if");
+        expectValueToBe("(");
+        auto condition = readExpression();
+        expectValueToBe(")");
+        auto mainClause = readStatement();
+        std::optional<StatementPtr> elseClause = std::nullopt;
+        if (nextIfValue("else")) {
+            elseClause = readStatement();
+        }
+        const auto ifElse = new IfElseStatement(std::move(condition), std::move(mainClause), std::move(elseClause), startPosition);
+        return std::unique_ptr<IfElseStatement>(ifElse);
+    END_CATCHING_BLOCK(IllegalStatement, "if-else statement")
 }
 
 StatementPtr Parser::readContinueOperator() noexcept {
@@ -166,7 +177,7 @@ StatementPtr Parser::readBreakOperator() noexcept {
 StatementPtr Parser::readReturnOperator() noexcept {
     CATCHING_BLOCK
         expectValueToBe("return");
-        std::optional<std::unique_ptr<Expression>> expression = std::nullopt;
+        std::optional<ExpressionPtr> expression = std::nullopt;
         if (!peekValueIs(";")) {
             expression = readExpression();
         }
@@ -188,7 +199,7 @@ StatementPtr Parser::readBareExpression() noexcept {
 
 StatementPtr Parser::readBlockOfStatements() noexcept {
     CATCHING_BLOCK
-        auto statements = std::vector<std::unique_ptr<Statement>>();
+        auto statements = std::vector<StatementPtr>();
         expectValueToBe("{");
         while (!lexer.eof() && !peekValueIs("}")) {
             auto statement = readStatement();
@@ -298,8 +309,6 @@ ExpressionPtr Parser::readLambdaExpression() noexcept {
     END_CATCHING_BLOCK(IllegalExpression, "lambda expression")
 }
 
-// TODO: implement all expression parsers
-
 // helper functions
 
 bool Parser::peekValueIs(const std::string &value) {
@@ -325,14 +334,14 @@ void Parser::expectValueToBe(const std::string &expectedValue) {
         lexer.next();
         return;
     }
-    throw WrongTokenValueException(expectedValue, lexer.peek().value);
+    throw WrongTokenValueException(expectedValue, lexer.peek());
 }
 
 std::string Parser::expectTypeToBe(TokenType expectedType) {
     if (lexer.peek().type == expectedType) {
         return lexer.next().value;
     }
-    throw WrongTokenTypeException(lexer.peek().type, expectedType);
+    throw WrongTokenTypeException(expectedType, lexer.peek());
 }
 
 // skips everything until next punctuation sign
