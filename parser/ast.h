@@ -5,11 +5,13 @@
 #include <string>
 #include <optional>
 #include <memory>
+#include "printer.h"
 
 #define NODE_TYPE(TYPE)       [[nodiscard]] NodeType       nodeType()       const override { return TYPE; }
+#define NODE_NAME(NAME)       [[nodiscard]] std::string    nodeName()       const override { return NAME; }
 #define STATEMENT_TYPE(TYPE)  [[nodiscard]] StatementType  statementType()  const override { return TYPE; }
 #define EXPRESSION_TYPE(TYPE) [[nodiscard]] ExpressionType expressionType() const override { return TYPE; }
-#define NODE_NAME(NAME)       [[nodiscard]] std::string    nodeName()       const override { return NAME; }
+#define ENABLE_PRINT          void acceptPrinter(Printer &printer) const override
 
 namespace parser::AST {
     // just for convenience, I will declare
@@ -25,17 +27,10 @@ namespace parser::AST {
         const Position position;
         explicit Node(Position position)
             : position(std::move(position)) {}
-        [[nodiscard]] virtual std::string nodeName() const {
-            return "node";
-        }
-        [[nodiscard]] std::string nodeLabel() const {
-            const auto [line, column] = position;
-            auto name = nodeName();
-            name[0] = static_cast<char>(toupper(static_cast<int>(name[0])));
-            return name + " at (line " + std::to_string(line) +
-                ", column " + std::to_string(column) + ")";
-        }
-        [[nodiscard]] virtual NodeType nodeType() const = 0;
+        [[nodiscard]] virtual std::string nodeName()  const { return "node"; }
+        [[nodiscard]] std::string         nodeLabel() const;
+        [[nodiscard]] virtual NodeType    nodeType()  const = 0;
+        virtual void acceptPrinter(Printer &printer)  const = 0;
     };
 
     // Abstract base struct for all statements
@@ -89,6 +84,7 @@ namespace parser::AST {
 
     // Program is a list of unique pointers to statements
     using Program = std::vector<StatementPtr>;
+    std::string programToString(const Program &program, unsigned tabSize);
 
     // Statements:
     using enum Statement::StatementType;
@@ -103,6 +99,7 @@ namespace parser::AST {
             std::optional<ExpressionPtr> value,
             Position position
         ) : name(std::move(name)), value(std::move(value)), Statement(position) {}
+        ENABLE_PRINT;
     };
 
     struct FunctionDeclarationStatement final : Statement {
@@ -117,6 +114,7 @@ namespace parser::AST {
             StatementPtr body,
             Position position
         ) : name(std::move(name)), parameters(std::move(parameters)), body(std::move(body)), Statement(position) {}
+        ENABLE_PRINT;
     };
 
     struct ForLoopStatement final : Statement {
@@ -135,6 +133,7 @@ namespace parser::AST {
         ) : variable(std::move(variable)), start(std::move(start)),
             end(std::move(end)),           step(std::move(step)),
             body(std::move(body)),         Statement(std::move(position)) {}
+        ENABLE_PRINT;
     };
 
     struct WhileLoopStatement final : Statement {
@@ -147,6 +146,7 @@ namespace parser::AST {
             StatementPtr body,
             Position position
         ) : condition(std::move(condition)), body(std::move(body)), Statement(position) {}
+        ENABLE_PRINT;
     };
 
     struct IfElseStatement final : Statement {
@@ -161,18 +161,21 @@ namespace parser::AST {
             std::optional<StatementPtr> elseClause,
             Position position
         ) : condition(std::move(condition)), mainClause(std::move(mainClause)), elseClause(std::move(elseClause)), Statement(position) {}
+        ENABLE_PRINT;
     };
 
     struct ContinueOperatorStatement final : Statement {
         NODE_NAME("continue operator")
         STATEMENT_TYPE(ContinueOperator)
         explicit ContinueOperatorStatement(Position position) : Statement(position) {}
+        ENABLE_PRINT;
     };
 
     struct BreakOperatorStatement final : Statement {
         NODE_NAME("break operator")
         STATEMENT_TYPE(BreakOperator)
         explicit BreakOperatorStatement(Position position) : Statement(position) {}
+        ENABLE_PRINT;
     };
 
     struct ReturnOperatorStatement final : Statement {
@@ -183,6 +186,7 @@ namespace parser::AST {
             std::optional<ExpressionPtr> expression,
             Position position
         ) : expression(std::move(expression)), Statement(position) {}
+        ENABLE_PRINT;
     };
 
     struct ExpressionStatement final : Statement {
@@ -193,6 +197,7 @@ namespace parser::AST {
             ExpressionPtr expression,
             Position position
         ) : expression(std::move(expression)), Statement(position) {}
+        ENABLE_PRINT;
     };
 
     struct BlockStatement final : Statement {
@@ -203,12 +208,14 @@ namespace parser::AST {
             std::vector<StatementPtr> statements,
             Position position
         ) : statements(std::move(statements)), Statement(position) {}
+        ENABLE_PRINT;
     };
 
     struct IllegalStatement final : Statement {
         NODE_NAME("illegal statement")
         STATEMENT_TYPE(StatementError)
         explicit IllegalStatement (Position position) : Statement(position) {}
+        ENABLE_PRINT;
     };
 
     // Expressions:
@@ -226,6 +233,7 @@ namespace parser::AST {
             std::string op,
             Position position
         ) : left(std::move(left)), right(std::move(right)), op(std::move(op)), Expression(position) {}
+        ENABLE_PRINT;
     };
 
     struct PrefixOperationExpression final : Expression {
@@ -238,6 +246,7 @@ namespace parser::AST {
             std::string op,
             Position position
         ) : expression(std::move(expression)), op(std::move(op)), Expression(position) {}
+        ENABLE_PRINT;
     };
 
     struct CallExpression final : Expression {
@@ -250,6 +259,7 @@ namespace parser::AST {
             std::vector<ExpressionPtr> arguments,
             Position position
         ) : target(std::move(target)), arguments(std::move(arguments)), Expression(position) {}
+        ENABLE_PRINT;
     };
 
     struct NumberLiteralExpression final : Expression {
@@ -260,6 +270,7 @@ namespace parser::AST {
             long double value,
             Position position
         ) : value(value), Expression(position) {}
+        ENABLE_PRINT;
     };
 
     struct BooleanLiteralExpression final : Expression {
@@ -270,6 +281,7 @@ namespace parser::AST {
             bool value,
             Position position
         ) : value(value), Expression(position) {}
+        ENABLE_PRINT;
     };
 
     struct VariableExpression final : Expression {
@@ -280,6 +292,7 @@ namespace parser::AST {
                 std::string name,
                 Position position
         ) : name(std::move(name)), Expression(position) {}
+        ENABLE_PRINT;
     };
 
     struct LambdaExpression final : Expression {
@@ -292,11 +305,13 @@ namespace parser::AST {
             StatementPtr body,
             Position position
         ) : parameters(std::move(parameters)), body(std::move(body)), Expression(position) {}
+        ENABLE_PRINT;
     };
 
     struct IllegalExpression final : Expression {
         NODE_NAME("illegal expression")
         EXPRESSION_TYPE(ExpressionError)
         explicit IllegalExpression (Position position) : Expression(position) {}
+        ENABLE_PRINT;
     };
 }
