@@ -7,7 +7,7 @@ using namespace parser;
 using namespace parser::exceptions;
 
 #define CATCHING_BLOCK                                                   \
-    const auto startPosition = lexer.peek().position;                    \
+    auto startPosition = lexer.peek().position;                    \
     const auto [startLine, startColumn] = startPosition;                 \
     try {
 
@@ -71,13 +71,13 @@ StatementPtr Parser::readStatement() {
 StatementPtr Parser::readVariableDeclaration() noexcept {
     CATCHING_BLOCK
         expectValueToBe("let");
-        const auto identifier = expectTypeToBe(Identifier);
+        auto identifier = expectTypeToBe(Identifier);
         std::optional<ExpressionPtr> init(std::nullopt);
         if (nextIfValue("=")) {
             init = readExpression();
         }
         expectValueToBe(";");
-        const auto declaration = new VariableDeclarationStatement(identifier, std::move(init), startPosition);
+        const auto declaration = new VariableDeclarationStatement(identifier, init, startPosition);
         return std::unique_ptr<VariableDeclarationStatement>(declaration);
     END_CATCHING_BLOCK(IllegalStatement, "variable declaration")
 }
@@ -85,10 +85,10 @@ StatementPtr Parser::readVariableDeclaration() noexcept {
 StatementPtr Parser::readFunctionDeclaration() noexcept {
     CATCHING_BLOCK
         expectValueToBe("fun");
-        const auto name = expectTypeToBe(Identifier);
+        auto name = expectTypeToBe(Identifier);
         auto paramList = readFunctionArgList();
         auto body = readBlockOfStatements();
-        const auto declaration = new FunctionDeclarationStatement(name, std::move(paramList), std::move(body), startPosition);
+        const auto declaration = new FunctionDeclarationStatement(name, paramList, body, startPosition);
         return std::unique_ptr<FunctionDeclarationStatement>(declaration);
     END_CATCHING_BLOCK(IllegalStatement, "function declaration")
 }
@@ -109,7 +109,7 @@ StatementPtr Parser::readForLoop() noexcept {
     CATCHING_BLOCK
         expectValueToBe("for");
         expectValueToBe("(");
-        const auto variable = expectTypeToBe(Identifier);
+        auto variable = expectTypeToBe(Identifier);
 
         expectValueToBe("from");
         auto start = readExpression();
@@ -123,7 +123,7 @@ StatementPtr Parser::readForLoop() noexcept {
         expectValueToBe(")");
 
         auto body = readStatement();
-        const auto loop = new ForLoopStatement(variable, std::move(start), std::move(end), std::move(step), std::move(body), startPosition);
+        const auto loop = new ForLoopStatement(variable, start, end, step, body, startPosition);
         return std::unique_ptr<ForLoopStatement>(loop);
     END_CATCHING_BLOCK(IllegalStatement, "for loop")
 }
@@ -135,7 +135,7 @@ StatementPtr Parser::readWhileLoop() noexcept {
         auto condition = readExpression();
         expectValueToBe(")");
         auto body = readStatement();
-        const auto loop = new WhileLoopStatement(std::move(condition), std::move(body), startPosition);
+        const auto loop = new WhileLoopStatement(condition, body, startPosition);
         return std::unique_ptr<WhileLoopStatement>(loop);
     END_CATCHING_BLOCK(IllegalStatement, "while loop")
 }
@@ -151,7 +151,7 @@ StatementPtr Parser::readIfElseStatement() noexcept {
         if (nextIfValue("else")) {
             elseClause = readStatement();
         }
-        const auto ifElse = new IfElseStatement(std::move(condition), std::move(mainClause), std::move(elseClause), startPosition);
+        const auto ifElse = new IfElseStatement(condition, mainClause, elseClause, startPosition);
         return std::unique_ptr<IfElseStatement>(ifElse);
     END_CATCHING_BLOCK(IllegalStatement, "if-else statement")
 }
@@ -183,7 +183,7 @@ StatementPtr Parser::readReturnOperator() noexcept {
         }
         expectValueToBe(";");
 
-        const auto ret = new ReturnOperatorStatement(std::move(expression), startPosition);
+        const auto ret = new ReturnOperatorStatement(expression, startPosition);
         return std::unique_ptr<ReturnOperatorStatement>(ret);
     END_CATCHING_BLOCK(IllegalStatement, "return operator")
 }
@@ -192,7 +192,7 @@ StatementPtr Parser::readBareExpression() noexcept {
     CATCHING_BLOCK
         auto expression = readExpression();
         expectValueToBe(";");
-        const auto bare = new ExpressionStatement(std::move(expression), startPosition);
+        const auto bare = new ExpressionStatement(expression, startPosition);
         return std::unique_ptr<ExpressionStatement>(bare);
     END_CATCHING_BLOCK(IllegalStatement, "bare expression")
 }
@@ -206,7 +206,7 @@ StatementPtr Parser::readBlockOfStatements() noexcept {
             statements.push_back(std::move(statement));
         }
         expectValueToBe("}");
-        const auto block = new BlockStatement(std::move(statements), startPosition);
+        const auto block = new BlockStatement(statements, startPosition);
         return std::unique_ptr<BlockStatement>(block);
     END_CATCHING_BLOCK(IllegalStatement, "block statement")
 }
@@ -220,24 +220,24 @@ ExpressionPtr Parser::readExpression() noexcept {
 }
 
 ExpressionPtr Parser::readLeftBinOp(const std::set<std::string> &ops, const ExpressionParser &parser) {
-    const auto startPosition = lexer.peek().position;
+    auto startPosition = lexer.peek().position;
     auto left = parser();
     while (ops.contains(lexer.peek().value)) {
-        const auto op = lexer.next().value;
+        auto op = lexer.next().value;
         auto right = parser();
-        const auto binOp = new BinaryOperationExpression(std::move(left), std::move(right), op, startPosition);
+        const auto binOp = new BinaryOperationExpression(left, right, op, startPosition);
         left = std::unique_ptr<BinaryOperationExpression>(binOp);
     }
     return left;
 }
 
 ExpressionPtr Parser::readRightBinOp(const std::set<std::string> &ops, const ExpressionParser &parser) {
-    const auto startPosition = lexer.peek().position;
+    auto startPosition = lexer.peek().position;
     auto left = parser();
     if (ops.contains(lexer.peek().value)) {
-        const auto op = lexer.next().value;
+        auto op = lexer.next().value;
         auto right = readRightBinOp(ops, parser);
-        const auto binOp = new BinaryOperationExpression(std::move(left), std::move(right), op, startPosition);
+        const auto binOp = new BinaryOperationExpression(left, right, op, startPosition);
         left = std::unique_ptr<BinaryOperationExpression>(binOp);
     }
     return left;
@@ -248,22 +248,22 @@ const std::set<std::string> PREFIX_OPERATORS {
 };
 
 ExpressionPtr Parser::readPrefixOperation() {
-    const auto startPosition = lexer.peek().position;
+    auto startPosition = lexer.peek().position;
     if (PREFIX_OPERATORS.contains(lexer.peek().value)) {
-        const auto op = lexer.next().value;
+        auto op = lexer.next().value;
         auto nested = readPrefixOperation();
-        const auto prefOp = new PrefixOperationExpression(std::move(nested), op, startPosition);
+        const auto prefOp = new PrefixOperationExpression(nested, op, startPosition);
         return std::unique_ptr<PrefixOperationExpression>(prefOp);
     }
     return readPostfixOperation();
 }
 
 ExpressionPtr Parser::readPostfixOperation() {
-    const auto startPosition = lexer.peek().position;
+    auto startPosition = lexer.peek().position;
     auto expression = readAtomicExpression();
     while (peekValueIs("(")) {
         auto argList = readFunctionArgList();
-        const auto call = new CallExpression(std::move(expression), std::move(argList), startPosition);
+        const auto call = new CallExpression(expression, argList, startPosition);
         expression = std::unique_ptr<CallExpression>(call);
     }
     return expression;
@@ -291,7 +291,7 @@ ExpressionPtr Parser::readAtomicExpression() noexcept {
             return std::unique_ptr<NumberLiteralExpression>(num);
         }
         if (peekTypeIs(Identifier)) {
-            const auto name = lexer.next().value;
+            auto name = lexer.next().value;
             const auto var = new VariableExpression(name, startPosition);
             return std::unique_ptr<VariableExpression>(var);
         }
@@ -304,7 +304,7 @@ ExpressionPtr Parser::readLambdaExpression() noexcept {
         expectValueToBe("lambda");
         auto argList = readFunctionArgList();
         auto body = readBlockOfStatements();
-        const auto lm = new LambdaExpression(std::move(argList), std::move(body), startPosition);
+        const auto lm = new LambdaExpression(argList, body, startPosition);
         return std::unique_ptr<LambdaExpression>(lm);
     END_CATCHING_BLOCK(IllegalExpression, "lambda expression")
 }

@@ -4,16 +4,12 @@
 #include "parser/parser.h"
 
 const std::string sample = R"(
-        fun factorial (a) {
-            let if
-            let output = 1;
-            for (i om 1 to a) {
-                output *= i;
-            }
-            return output;
+        fun main() {
+            let a = 1 + 2 * 3 + 4 + (5 * 6 ^ 7);
+            print(a);
         }
 
-fun main() {
+        main();
     )";
 
 int main() {

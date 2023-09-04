@@ -142,6 +142,7 @@ DEF_PRINT_FOR(CallExpression) {
 }
 
 DEF_PRINT_FOR(NumberLiteralExpression) {
+    // TODO: print without trailing zeroes
     printer << std::to_string(value);
 }
 
