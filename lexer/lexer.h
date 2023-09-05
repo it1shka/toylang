@@ -10,16 +10,16 @@ namespace lexer {
         std::tuple<unsigned, unsigned> currentPosition;
         // private parsing functions
         Token readToken();
-        [[nodiscard]] Token makeToken(TokenType type, std::string value) const;
+        [[nodiscard]] Token makeToken(TokenType type, std::string &valueBuffer) const;
         // read different types of tokens
-        Token readIllegalToken();
-        Token readWordToken();
-        Token readNumberToken();
+        Token readIllegalToken (std::string &valueBuffer);
+        Token readWordToken    (std::string &valueBuffer);
+        Token readNumberToken  (std::string &valueBuffer);
         // helper functions
         void skipWhile(const std::function<bool(char)> &predicate);
         void skipWhitespace();
         void skipComment();
-        [[nodiscard]] std::string readWhile(const std::function<bool(char)> &predicate);
+        void readWhile(std::string &valueBuffer, const std::function<bool(char)> &predicate);
     public:
         explicit Lexer(std::istream &source);
         const Token& peek();

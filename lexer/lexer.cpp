@@ -1,5 +1,4 @@
 #include "lexer.h"
-#include <string>
 #include <set>
 
 using namespace lexer;
@@ -38,8 +37,8 @@ Lexer::Lexer(std::istream &source) : buffer(InputBuffer(source)) {
 
 const Token& Lexer::peek() {
     if (!currentToken) {
-        const auto token = readToken();
-        currentToken.emplace(token);
+        auto token = readToken();
+        currentToken.emplace(std::move(token));
     }
     return *currentToken;
 }
@@ -48,7 +47,7 @@ Token Lexer::next() {
     if (!currentToken) {
         return readToken();
     }
-    auto token = *currentToken;
+    auto token = std::move(*currentToken);
     currentToken = std::nullopt;
     return token;
 }
@@ -65,9 +64,13 @@ Token Lexer::readToken() {
     skipWhitespace();
     currentPosition = buffer.getPosition();
 
+    // will be user to create tokens later
+    // buffer for valueBuffer of current token
+    std::string valueBuffer;
+
     // Handling EOF
     if (buffer.eof()) {
-        return makeToken(EndOfFile, "");
+        return makeToken(EndOfFile, valueBuffer);
     }
 
     const auto current = buffer.peek();
@@ -80,81 +83,79 @@ Token Lexer::readToken() {
 
     // words (keywords, identifiers, some of operators)
     if (isalpha(static_cast<int>(current)) || current == '_') {
-        return readWordToken();
+        return readWordToken(valueBuffer);
     }
 
     // numbers
     if (isdigit(static_cast<int>(current))) {
-        return readNumberToken();
+        return readNumberToken(valueBuffer);
     }
-
-    // will be used to create punctuation / non-alpha ops
-    // initially is empty (empty string = "")
-    std::string value;
 
     // Punctuation (){},;
     if (PUNCTUATION.contains(current)) {
-        value += buffer.next();
-        return makeToken(Punctuation, value);
+        valueBuffer += buffer.next();
+        return makeToken(Punctuation, valueBuffer);
     }
 
     // Non-alpha operators
     switch(current) {
         case '=': case '+': case '-': case '^':
         case '*': case '/': case '>': case '<':
-            value += buffer.next();
-            if (buffer.peek() == '=') value += buffer.next();
-            return makeToken(Operator, value);
+            valueBuffer += buffer.next();
+            if (buffer.peek() == '=') valueBuffer += buffer.next();
+            return makeToken(Operator, valueBuffer);
         case '!':
-            if (buffer.peek() != '=') return makeToken(Illegal, value);
-            return makeToken(Operator, value + buffer.next());
+            valueBuffer += buffer.next();
+            if (buffer.peek() != '=') return makeToken(Illegal, valueBuffer);
+            valueBuffer += buffer.next();
+            return makeToken(Operator, valueBuffer);
         default:
             // finally, if nothing clicks, return illegal
-            return readIllegalToken();
+            return readIllegalToken(valueBuffer);
     }
 }
 
-Token Lexer::readIllegalToken() {
-    const auto value = readWhile([](auto ch) {
+Token Lexer::readIllegalToken(std::string &valueBuffer) {
+    readWhile(valueBuffer, [](auto ch) {
         const auto result = isspace(static_cast<int>(ch));
         return !static_cast<bool>(result);
     });
-    return makeToken(TokenType::Illegal, value);
+    return makeToken(TokenType::Illegal, valueBuffer);
 }
 
-Token Lexer::readWordToken() {
-    const auto value = readWhile([](auto ch) {
+Token Lexer::readWordToken(std::string &valueBuffer) {
+    readWhile(valueBuffer, [](auto ch) {
         const auto isAlphanum = std::isalnum(static_cast<int>(ch));
         return static_cast<bool>(isAlphanum) || ch == '_';
     });
     using enum TokenType;
-    if (KEYWORDS.contains(value)) {
-        return makeToken(Keyword, value);
+    if (KEYWORDS.contains(valueBuffer)) {
+        return makeToken(Keyword, valueBuffer);
     }
-    if (OPERATORS.contains(value)) {
-        return makeToken(Operator, value);
+    if (OPERATORS.contains(valueBuffer)) {
+        return makeToken(Operator, valueBuffer);
     }
-    return makeToken(Identifier, value);
+    return makeToken(Identifier, valueBuffer);
 }
 
-Token Lexer::readNumberToken() {
-    const auto readDigits = [this]() {
-        return readWhile([](auto ch) {
+Token Lexer::readNumberToken(std::string &valueBuffer) {
+    const auto readDigits = [this](std::string &value) {
+        readWhile(value, [](auto ch) {
             const auto isDigit = std::isdigit(static_cast<int>(ch));
             return static_cast<bool>(isDigit);
         });
     };
-    auto value = readDigits();
+    readDigits(valueBuffer);
     if (buffer.peek() == '.') {
-        value += buffer.next();
-        value += readDigits();
+        valueBuffer += buffer.next();
+        readDigits(valueBuffer);
     }
-    return makeToken(TokenType::Number, value);
+    return makeToken(TokenType::Number, valueBuffer);
 }
 
-Token Lexer::makeToken(TokenType type, std::string value) const {
+Token Lexer::makeToken(TokenType type, std::string &valueBuffer) const {
     return {
-        type,std::move(value),
+        type, std::move(valueBuffer),
         currentPosition
     };
 }
@@ -178,11 +179,9 @@ void Lexer::skipComment() {
     });
 }
 
-std::string Lexer::readWhile(const std::function<bool(char)> &predicate) {
-    std::string output;
+void Lexer::readWhile(std::string &valueBuffer, const std::function<bool(char)> &predicate) {
     while (!buffer.eof() && predicate(buffer.peek())) {
         const auto letter = buffer.next();
-        output += letter;
+        valueBuffer += letter;
     }
-    return output;
 }
