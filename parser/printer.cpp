@@ -3,7 +3,7 @@
 using namespace parser;
 
 Printer::Printer(unsigned tabSize)
-    : tabSize(4), tabLevel(0) {}
+    : tabSize(tabSize), tabLevel(0) {}
 
 void Printer::increaseTabLevel() {
     tabLevel++;

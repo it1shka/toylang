@@ -7,7 +7,7 @@ using namespace parser;
 using namespace parser::exceptions;
 
 #define CATCHING_BLOCK                                                   \
-    auto startPosition = lexer.peek().position;                    \
+    auto startPosition = lexer.peek().position;                          \
     const auto [startLine, startColumn] = startPosition;                 \
     try {
 
@@ -43,13 +43,14 @@ const std::vector<std::string>& Parser::getErrors() const {
     return errors;
 }
 
-Program Parser::buildAST() {
-    auto output = Program();
+ProgramPtr Parser::readProgram() {
+    auto startPosition = lexer.peek().position;
+    auto statements = std::vector<StatementPtr>();
     while (!lexer.eof()) {
-        auto statement = readStatement();
-        output.push_back(std::move(statement));
+        statements.push_back(readStatement());
     }
-    return output;
+    const auto block = new Program(statements, startPosition);
+    return std::unique_ptr<Program>(block);
 }
 
 // statements
@@ -97,8 +98,7 @@ std::vector<ExpressionPtr> Parser::readFunctionArgList() {
     auto list = std::vector<ExpressionPtr>();
     expectValueToBe("(");
     while (!lexer.eof() && !peekValueIs(")")) {
-        auto expression = readExpression();
-        list.push_back(std::move(expression));
+        list.push_back(readExpression());
         if (!nextIfValue(",")) break;
     }
     expectValueToBe(")");
@@ -202,8 +202,7 @@ StatementPtr Parser::readBlockOfStatements() noexcept {
         auto statements = std::vector<StatementPtr>();
         expectValueToBe("{");
         while (!lexer.eof() && !peekValueIs("}")) {
-            auto statement = readStatement();
-            statements.push_back(std::move(statement));
+            statements.push_back(readStatement());
         }
         expectValueToBe("}");
         const auto block = new BlockStatement(statements, startPosition);

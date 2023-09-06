@@ -17,7 +17,6 @@ namespace parser {
         std::vector<std::string> errors;
         const ExpressionParser expressionParser;
         // statements
-        StatementPtr readStatement();
         StatementPtr readVariableDeclaration() noexcept;
         StatementPtr readFunctionDeclaration() noexcept;
         std::vector<ExpressionPtr> readFunctionArgList();
@@ -49,6 +48,7 @@ namespace parser {
         // public interface
         explicit Parser(std::istream &source);
         [[nodiscard]] const std::vector<std::string>& getErrors() const;
-        Program buildAST();
+        StatementPtr readStatement();
+        ProgramPtr readProgram();
     };
 }

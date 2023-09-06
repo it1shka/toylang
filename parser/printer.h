@@ -7,7 +7,7 @@ namespace parser {
         unsigned tabLevel;
         std::string accumulate;
     public:
-        explicit Printer(unsigned tabSize);
+        explicit Printer(unsigned tabSize = 4);
         void increaseTabLevel();
         void decreaseTabLevel();
         void pad();

@@ -22,8 +22,9 @@ int main() {
 
         std::istringstream stream(input);
         auto parser = parser::Parser(stream);
-        auto ast = parser.buildAST();
-        std::cout << programToString(ast, 2) << std::endl;
+        auto ast = parser.readProgram();
+        std::cout << ast->toDebugString(2) << std::endl;
+        std::cout << ast->toFormatString(2) << std::endl;
         for (const auto &each : parser.getErrors()) {
             std::cout << each << std::endl;
         }
