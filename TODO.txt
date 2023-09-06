@@ -1,0 +1,30 @@
+REALLY IMPORTANT TODOS:
+
+1. Cover parser with more tests
+2. Extend language with:
+    a) strings -- "Hello world!", 'Tikhon'
+    b) arrays -- [1, 2, 3, 'Hello', lambda(a) { return a * 2; }]
+    c) objects -- for now I'm not sure how to do them
+    d) two new 'get' operators: dot syntax '.' and bracket syntax '[]'
+    e) null -- for now there is no way how to denote None/null/Nothing/nil
+3. Code analyzer -- will analyze for undeclared variables,
+  illegal statements, maybe typechecking?
+4. Split project into multiple libraries using
+  add_library() in CMake, and link those libraries together.
+  Generally it would be good to care a little bit more about my
+  CMakeLists.txt files
+
+NOT REALLY IMPORTANT FOR NOW:
+Think how to implement interpreter
+Bare interpreter with visiting all the nodes?
+Developing my own bytecode?
+Emitting my own bytecode in runtime and then executing it?
+We will see
+
+Type system?
+
+And maybe before changing from monolith binary
+to multiple libraries it would be good to
+read how to revert changes with Git, so
+if anything goes wrong I can fix it just by
+reverting to previous version

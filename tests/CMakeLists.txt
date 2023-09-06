@@ -9,5 +9,5 @@ file(GLOB lexer_src  ${CMAKE_SOURCE_DIR}/lexer/*.cpp  )
 file(GLOB parser_src ${CMAKE_SOURCE_DIR}/parser/*.cpp )
 file(GLOB utils_src  ${CMAKE_SOURCE_DIR}/utils.cpp    )
 
-add_executable(tests_run lexer_basic_tests.cpp ${lexer_src} ${parser_src} ${utils_src} lexer_real_tests.cpp)
+add_executable(tests_run lexer_basic_tests.cpp ${lexer_src} ${parser_src} ${utils_src} lexer_real_tests.cpp parser_basic_tests.cpp)
 target_link_libraries(tests_run gtest gtest_main)
