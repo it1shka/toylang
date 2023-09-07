@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "../lexer/include/lexer/lexer.h"
+#include "lexer/lexer.h"
 
 using namespace lexer;
 using enum TokenType;
