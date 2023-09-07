@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "../parser/parser.h"
+#include "../parser/include/parser/parser.h"
 
 using namespace parser;
 

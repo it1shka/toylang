@@ -1,0 +1,5 @@
+project(toy_lang_parser)
+include_directories(include/parser)
+add_library(toy_lang_parser STATIC source/ast.cpp source/parser.cpp source/printer.cpp)
+target_link_libraries(toy_lang_parser PRIVATE toy_lang_lexer toy_lang_utils)
+target_include_directories(toy_lang_parser PUBLIC include)

@@ -1,7 +1,7 @@
 #pragma once
 #include <stdexcept>
 #include <string>
-#include "../lexer/token.h"
+#include "lexer/token.h"
 
 namespace parser::exceptions {
     class ParserException : public std::exception {};

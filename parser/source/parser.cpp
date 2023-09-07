@@ -1,5 +1,4 @@
 #include "parser.h"
-
 #include <memory>
 #include "except.h"
 

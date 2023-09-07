@@ -1,0 +1,3 @@
+project(toy_lang_app)
+add_executable(toy_lang_app main.cpp)
+target_link_libraries(toy_lang_app PRIVATE toy_lang_utils toy_lang_lexer toy_lang_parser)

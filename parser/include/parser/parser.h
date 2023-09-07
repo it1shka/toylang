@@ -1,9 +1,9 @@
 #pragma once
-#include "../lexer/lexer.h"
 #include <vector>
 #include <set>
 #include <string>
 #include "ast.h"
+#include "lexer/lexer.h"
 
 using namespace lexer;
 using namespace parser::AST;
