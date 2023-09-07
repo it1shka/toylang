@@ -1,6 +1,6 @@
 REALLY IMPORTANT TODOS:
 
-1. Cover parser with more tests
+1. Cover parser with more tests and lexer
 2. Extend language with:
     a) strings -- "Hello world!", 'Tikhon'
     b) arrays -- [1, 2, 3, 'Hello', lambda(a) { return a * 2; }]
@@ -22,6 +22,8 @@ Emitting my own bytecode in runtime and then executing it?
 We will see
 
 Type system?
+
+Import system!!!!!
 
 And maybe before changing from monolith binary
 to multiple libraries it would be good to
