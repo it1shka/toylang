@@ -1,26 +1,21 @@
 REALLY IMPORTANT TODOS:
 
-1. Cover parser with more tests and lexer
-2. Extend language with:
-    a) strings -- "Hello world!", 'Tikhon'
-    b) arrays -- [1, 2, 3, 'Hello', lambda(a) { return a * 2; }]
-    c) objects -- for now I'm not sure how to do them
-    d) two new 'get' operators: dot syntax '.' and bracket syntax '[]'
-    e) null -- for now there is no way how to denote None/null/Nothing/nil
-    f) import / export system (import as
-3. Code analyzer -- will analyze for undeclared variables,
-  illegal statements, maybe typechecking?
-4. Stable and reliable interpreter
+    1. Cover parser and lexer with more tests IMPORTANT new syntax is untested!!!
+    2. Extend language with:
+        a) objects -- for now I'm not sure how to do them
+        b) member access operator . (dot)
+    3. Code analyzer -- will analyze for undeclared variables,
+      illegal statements, maybe typechecking?
+    4. Stable and reliable interpreter
 
 NOT REALLY IMPORTANT TODOS:
 
-Stack-based virtual machine with manageable heap
-and types support
-
-Compiler to bytecode
-
-=> better way to execute the code
+    Stack-based virtual machine with manageable heap
+    and types support
+    Compiler to bytecode
+    => better way to execute the code
 
 WHAT I'M IMPLEMENTING RIGHT NOW:
-Syntax for strings, arrays, get bracket operator [],
-nil, import (as) statement
+
+    Starting interpreter
+    I need to implement a good type system and lexical scope
