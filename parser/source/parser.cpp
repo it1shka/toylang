@@ -56,6 +56,7 @@ ProgramPtr Parser::readProgram() {
 
 StatementPtr Parser::readStatement() {
     const auto currentValue = lexer.peek().value;
+    if (currentValue == "import"  ) return readImportLibraryStatement();
     if (currentValue == "let"     ) return readVariableDeclaration();
     if (currentValue == "fun"     ) return readFunctionDeclaration();
     if (currentValue == "for"     ) return readForLoop();
@@ -66,6 +67,20 @@ StatementPtr Parser::readStatement() {
     if (currentValue == "return"  ) return readReturnOperator();
     if (currentValue == "{"       ) return readBlockOfStatements();
     return readBareExpression();
+}
+
+StatementPtr Parser::readImportLibraryStatement() noexcept {
+    CATCHING_BLOCK
+        expectValueToBe("import");
+        auto libName = expectTypeToBe(Identifier);
+        std::optional<std::string> alias = std::nullopt;
+        if (nextIfValue("as")) {
+            alias = expectTypeToBe(Identifier);
+        }
+        expectValueToBe(";");
+        const auto import = new ImportLibraryStatement(libName, alias, startPosition);
+        return std::unique_ptr<ImportLibraryStatement>(import);
+    END_CATCHING_BLOCK(IllegalStatement, "library import")
 }
 
 StatementPtr Parser::readVariableDeclaration() noexcept {
@@ -86,22 +101,11 @@ StatementPtr Parser::readFunctionDeclaration() noexcept {
     CATCHING_BLOCK
         expectValueToBe("fun");
         auto name = expectTypeToBe(Identifier);
-        auto paramList = readFunctionArgList();
+        auto paramList = readExpressionList("(", ")");
         auto body = readBlockOfStatements();
         const auto declaration = new FunctionDeclarationStatement(name, paramList, body, startPosition);
         return std::unique_ptr<FunctionDeclarationStatement>(declaration);
     END_CATCHING_BLOCK(IllegalStatement, "function declaration")
-}
-
-std::vector<ExpressionPtr> Parser::readFunctionArgList() {
-    auto list = std::vector<ExpressionPtr>();
-    expectValueToBe("(");
-    while (!lexer.eof() && !peekValueIs(")")) {
-        list.push_back(readExpression());
-        if (!nextIfValue(",")) break;
-    }
-    expectValueToBe(")");
-    return list;
 }
 
 StatementPtr Parser::readForLoop() noexcept {
@@ -259,16 +263,30 @@ ExpressionPtr Parser::readPrefixOperation() {
 ExpressionPtr Parser::readPostfixOperation() {
     auto startPosition = lexer.peek().position;
     auto expression = readAtomicExpression();
-    while (peekValueIs("(")) {
-        auto argList = readFunctionArgList();
-        const auto call = new CallExpression(expression, argList, startPosition);
-        expression = std::unique_ptr<CallExpression>(call);
+    while (!lexer.eof()) {
+        if (peekValueIs("(")) {
+            auto argList = readExpressionList("(", ")");
+            const auto call = new CallExpression(expression, argList, startPosition);
+            expression = std::unique_ptr<CallExpression>(call);
+            continue;
+        }
+        if (nextIfValue("[")) {
+            auto index = readExpression();
+            expectValueToBe("]");
+            const auto access = new IndexAccessExpression(expression, index, startPosition);
+            expression = std::unique_ptr<IndexAccessExpression>(access);
+            continue;
+        }
+        break;
     }
     return expression;
 }
 
 ExpressionPtr Parser::readAtomicExpression() noexcept {
     CATCHING_BLOCK
+        if (nextIfValue("nil")) {
+            return std::make_unique<NilLiteralExpression>(startPosition);
+        }
         if (nextIfValue("true")) {
             return std::make_unique<BooleanLiteralExpression>(true, startPosition);
         }
@@ -283,10 +301,18 @@ ExpressionPtr Parser::readAtomicExpression() noexcept {
         if (peekValueIs("lambda")) {
             return readLambdaExpression();
         }
+        if (peekValueIs("[")) {
+            auto values = readExpressionList("[", "]");
+            return std::make_unique<ArrayLiteralExpression>(values, startPosition);
+        }
         if (peekTypeIs(Number)) {
             const auto value = std::stold(lexer.next().value);
             const auto num = new NumberLiteralExpression(value, startPosition);
             return std::unique_ptr<NumberLiteralExpression>(num);
+        }
+        if (peekTypeIs(String)) {
+            auto value = lexer.next().value;
+            return std::make_unique<StringLiteralExpression>(value, startPosition);
         }
         if (peekTypeIs(Identifier)) {
             auto name = lexer.next().value;
@@ -300,7 +326,7 @@ ExpressionPtr Parser::readAtomicExpression() noexcept {
 ExpressionPtr Parser::readLambdaExpression() noexcept {
     CATCHING_BLOCK
         expectValueToBe("lambda");
-        auto argList = readFunctionArgList();
+        auto argList = readExpressionList("(", ")");
         auto body = readBlockOfStatements();
         const auto lm = new LambdaExpression(argList, body, startPosition);
         return std::unique_ptr<LambdaExpression>(lm);
@@ -308,6 +334,17 @@ ExpressionPtr Parser::readLambdaExpression() noexcept {
 }
 
 // helper functions
+
+std::vector<ExpressionPtr> Parser::readExpressionList(const std::string &start, const std::string &end) {
+    auto list = std::vector<ExpressionPtr>();
+    expectValueToBe(start);
+    while (!lexer.eof() && !peekValueIs(end)) {
+        list.push_back(readExpression());
+        if (!nextIfValue(",")) break;
+    }
+    expectValueToBe(end);
+    return list;
+}
 
 bool Parser::peekValueIs(const std::string &value) {
     const auto peek = lexer.peek();

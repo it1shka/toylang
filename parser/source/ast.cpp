@@ -34,6 +34,41 @@ FORMAT_FOR(Program) {
     }
 }
 
+FORMAT_FOR(ImportLibraryStatement) {
+    printer << "import " << libName;
+    if (alias) {
+        printer << " as " << (*alias);
+    }
+    printer << ";";
+}
+
+FORMAT_FOR(IndexAccessExpression) {
+    target->acceptFormatPrinter(printer);
+    printer << "[";
+    index->acceptFormatPrinter(printer);
+    printer << "]";
+}
+
+FORMAT_FOR(StringLiteralExpression) {
+    const auto printable = utils::quotedString(value, "\"");
+    printer << printable;
+}
+
+FORMAT_FOR(NilLiteralExpression) {
+    printer << "nil";
+}
+
+FORMAT_FOR(ArrayLiteralExpression) {
+    printer << "[";
+    for (size_t i = 0; i < values.size(); i++) {
+        values[i]->acceptFormatPrinter(printer);
+        if (i != values.size() - 1) {
+            printer << ", ";
+        }
+    }
+    printer << "]";
+}
+
 FORMAT_FOR(VariableDeclarationStatement) {
     printer << "let " << name;
     if (value) {
@@ -197,6 +232,42 @@ FORMAT_FOR(IllegalExpression) {
 DEBUG_FOR(Program) {
     PUSH_LABEL("[program]")
     NESTED_DEBUG_EACH(statements)
+}
+
+DEBUG_FOR(ImportLibraryStatement) {
+    const auto label = "[import " + libName + "]";
+    PUSH_LABEL(label)
+    if (alias) {
+        printer.increaseTabLevel();
+        const auto aliasLabel = "[alias " + (*alias) + "]";
+        PUSH_LABEL(aliasLabel)
+        printer.decreaseTabLevel();
+    }
+}
+
+DEBUG_FOR(IndexAccessExpression) {
+    PUSH_LABEL("[access]")
+    printer.increaseTabLevel();
+    PUSH_LABEL("[target]")
+    NESTED_DEBUG(target)
+    PUSH_LABEL("[index]")
+    NESTED_DEBUG(index)
+    printer.decreaseTabLevel();
+}
+
+DEBUG_FOR(StringLiteralExpression) {
+    const auto printable = utils::quotedString(value, "\"");
+    const auto label = "[str " + printable + "]";
+    PUSH_LABEL(label)
+}
+
+DEBUG_FOR(NilLiteralExpression) {
+    PUSH_LABEL("[nil]")
+}
+
+DEBUG_FOR(ArrayLiteralExpression) {
+    PUSH_LABEL("[array]")
+    NESTED_DEBUG_EACH(values)
 }
 
 DEBUG_FOR(VariableDeclarationStatement) {

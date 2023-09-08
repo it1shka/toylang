@@ -47,6 +47,7 @@ namespace parser::AST {
     struct Statement : Node {
         NODE_TYPE(NodeType::StatementNode)
         enum class StatementType {
+            LibraryImport,
             VariableDeclaration,
             FunctionDeclaration,
             ForLoop,
@@ -72,8 +73,12 @@ namespace parser::AST {
             BinaryOperation,
             PrefixOperation,
             Call,
+            IndexAccess,
             NumberLiteral,
             BooleanLiteral,
+            StringLiteral,
+            NilLiteral,
+            ArrayLiteral,
             Lambda,
             Variable,
             ExpressionError
@@ -105,6 +110,18 @@ namespace parser::AST {
 
     // Statements:
     using enum Statement::StatementType;
+
+    struct ImportLibraryStatement final : Statement {
+        STATEMENT_TYPE(LibraryImport)
+        const std::string libName;
+        const std::optional<std::string> alias;
+        ImportLibraryStatement (
+                std::string &libName,
+                std::optional<std::string> &alias,
+                Position position
+        ) : libName(std::move(libName)), alias(std::move(alias)), Statement(position) {}
+        ENABLE_PRINTING
+    };
 
     struct VariableDeclarationStatement final : Statement {
         STATEMENT_TYPE(VariableDeclaration)
@@ -267,6 +284,18 @@ namespace parser::AST {
         ENABLE_PRINTING
     };
 
+    struct IndexAccessExpression final : Expression {
+        EXPRESSION_TYPE(IndexAccess)
+        const ExpressionPtr target;
+        const ExpressionPtr index;
+        IndexAccessExpression (
+            ExpressionPtr &target,
+            ExpressionPtr &index,
+            Position position
+        ) : target(std::move(target)), index(std::move(index)), Expression(position) {}
+        ENABLE_PRINTING
+    };
+
     struct NumberLiteralExpression final : Expression {
         EXPRESSION_TYPE(NumberLiteral)
         const long double value;
@@ -284,6 +313,32 @@ namespace parser::AST {
             bool value,
             Position &position
         ) : value(value), Expression(position) {}
+        ENABLE_PRINTING
+    };
+
+    struct StringLiteralExpression final : Expression {
+        EXPRESSION_TYPE(StringLiteral)
+        const std::string value;
+        StringLiteralExpression (
+            std::string &value,
+            Position &position
+        ) : value(std::move(value)), Expression(position) {}
+        ENABLE_PRINTING
+    };
+
+    struct ArrayLiteralExpression final : Expression {
+        EXPRESSION_TYPE(ArrayLiteral)
+        const std::vector<ExpressionPtr> values;
+        ArrayLiteralExpression (
+            std::vector<ExpressionPtr> &values,
+            Position &position
+        ) : values(std::move(values)), Expression(position) {}
+        ENABLE_PRINTING
+    };
+
+    struct NilLiteralExpression final : Expression {
+        EXPRESSION_TYPE(NilLiteral)
+        explicit NilLiteralExpression(Position &position) : Expression(position) {}
         ENABLE_PRINTING
     };
 

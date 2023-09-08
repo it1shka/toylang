@@ -14,3 +14,21 @@ std::string utils::formatNumber(long double number) {
     }
     return output;
 }
+
+void utils::stringReplace(std::string &source, const std::string &original, const std::string &replacement) {
+    auto pointer = source.find(original);
+    while(pointer != std::string::npos) {
+        source.replace(pointer, original.size(), replacement);
+        pointer += replacement.size();
+        pointer = source.find(original, pointer);
+    }
+}
+
+std::string utils::quotedString(const std::string &source, const std::string &quote) {
+    const auto escapedQuote = "\\" + quote;
+    auto output = source;
+    stringReplace(output, quote, escapedQuote);
+    stringReplace(output, "\t", "\\t");
+    stringReplace(output, "\n", "\\n");
+    return quote + output + quote;
+}

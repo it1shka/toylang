@@ -1,4 +1,5 @@
 project(toy_lang_lexer)
 include_directories(include/lexer)
 add_library(toy_lang_lexer STATIC source/ibuffer.cpp source/lexer.cpp source/token.cpp)
+target_link_libraries(toy_lang_lexer PRIVATE toy_lang_utils)
 target_include_directories(toy_lang_lexer PUBLIC include)

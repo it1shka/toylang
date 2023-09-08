@@ -17,9 +17,9 @@ namespace parser {
         std::vector<std::string> errors;
         const ExpressionParser expressionParser;
         // statements
+        StatementPtr readImportLibraryStatement() noexcept;
         StatementPtr readVariableDeclaration() noexcept;
         StatementPtr readFunctionDeclaration() noexcept;
-        std::vector<ExpressionPtr> readFunctionArgList();
         StatementPtr readForLoop() noexcept;
         StatementPtr readWhileLoop() noexcept;
         StatementPtr readIfElseStatement() noexcept;
@@ -37,6 +37,7 @@ namespace parser {
         ExpressionPtr readAtomicExpression() noexcept;
         ExpressionPtr readLambdaExpression() noexcept;
         // helper functions
+        std::vector<ExpressionPtr> readExpressionList(const std::string &start, const std::string &end);
         bool peekValueIs(const std::string &value);
         bool peekTypeIs(TokenType type);
         bool nextIfValue(const std::string &value);

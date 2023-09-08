@@ -1,4 +1,5 @@
 #include "token.h"
+#include "utils/utils.h"
 
 using namespace lexer;
 
@@ -28,8 +29,12 @@ std::string Token::toString() const {
 }
 
 std::string Token::toStringShort() const {
+    using enum TokenType;
     auto output = tokenTypeToString(type);
-    if (type != TokenType::EndOfFile) {
+    if (type == String) {
+        auto prepared = utils::quotedString(value, "'");
+        output += " " + prepared;
+    } else if (type != EndOfFile) {
         output += " '" + value + "'";
     }
     return output;
