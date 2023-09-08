@@ -15,6 +15,7 @@ namespace lexer {
         Token readIllegalToken (std::string &valueBuffer);
         Token readWordToken    (std::string &valueBuffer);
         Token readNumberToken  (std::string &valueBuffer);
+        Token readStringToken  (std::string &valueBuffer);
         // helper functions
         void skipWhile(const std::function<bool(char)> &predicate);
         void skipWhitespace();

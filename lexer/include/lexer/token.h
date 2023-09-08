@@ -5,7 +5,7 @@ namespace lexer {
     enum class TokenType {
         Keyword, Identifier,
         Operator, Punctuation,
-        Number,
+        Number, String,
         EndOfFile, Illegal
     };
 

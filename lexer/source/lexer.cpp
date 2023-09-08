@@ -12,6 +12,8 @@ const std::set<std::string> KEYWORDS {
     "fun", "lambda",                // functions
     "return",                       // return value from functions
     "true", "false",                // boolean literals
+    "nil",                          // for nil type
+    "import", "as",                 // import system
 };
 
 const std::set<std::string> OPERATORS {
@@ -26,7 +28,7 @@ const std::set<std::string> OPERATORS {
 };
 
 const std::set<char> PUNCTUATION {
-    '(', ')', '{', '}', ',', ';'
+    '(', ')', '{', '}', ',', ';', '[', ']'
 };
 
 // public methods
@@ -109,6 +111,8 @@ Token Lexer::readToken() {
             if (buffer.peek() != '=') return makeToken(Illegal, valueBuffer);
             valueBuffer += buffer.next();
             return makeToken(Operator, valueBuffer);
+        case '\'': case '"':
+            return readStringToken(valueBuffer);
         default:
             // finally, if nothing clicks, return illegal
             return readIllegalToken(valueBuffer);
@@ -151,6 +155,30 @@ Token Lexer::readNumberToken(std::string &valueBuffer) {
         readDigits(valueBuffer);
     }
     return makeToken(TokenType::Number, valueBuffer);
+}
+
+Token Lexer::readStringToken(std::string &valueBuffer) {
+    const auto quoteSign = buffer.next();
+    while (!buffer.eof()) {
+        if (buffer.peek() == quoteSign || buffer.peek() == '\n') break;
+        if (const auto current = buffer.next(); current != '\\') {
+            valueBuffer += current;
+            continue;
+        }
+        switch(buffer.peek()) {
+            case 'n' :  valueBuffer += '\n'; buffer.next(); break;
+            case 't' :  valueBuffer += '\t'; buffer.next(); break;
+            case '"' :  valueBuffer += '"' ; buffer.next(); break;
+            case '\'':  valueBuffer += '\''; buffer.next(); break;
+            default:    valueBuffer += '\\';  break;
+        }
+    }
+    if (buffer.peek() != quoteSign) {
+        valueBuffer += " (unclosed string)";
+        return makeToken(TokenType::Illegal, valueBuffer);
+    }
+    buffer.next();
+    return makeToken(TokenType::String, valueBuffer);
 }
 
 Token Lexer::makeToken(TokenType type, std::string &valueBuffer) const {

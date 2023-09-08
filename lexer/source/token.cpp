@@ -10,6 +10,7 @@ std::string lexer::tokenTypeToString(TokenType type) {
         case Operator:    return "operator";
         case Punctuation: return "punctuation";
         case Number:      return "number";
+        case String:      return "string";
         case EndOfFile:   return "end of file";
         case Illegal:     return "illegal";
         default:          return "unknown";

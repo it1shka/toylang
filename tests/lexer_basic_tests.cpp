@@ -185,11 +185,12 @@ TEST(BasicLexerTests, ConstructionsTest) {
     FULL_TOKENS {
         "fun", "factorial", "(", "a", ")", "{",
             "if", "(", "a", "<=", "1", ")", "return", "-", "1", ";",
-            "let", "output", "=", "1",
+            "let", "output", "=", "1", ";",
             "for", "(", "i", "from", "1", "to", "a", ")", "{",
                 "output", "*=", "i", ";",
             "}",
             "return", "output", ";",
         "}",
     };
+    STRICT_VALUES_MATCH;
 }
