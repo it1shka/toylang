@@ -15,10 +15,12 @@ namespace interpreter {
     public:
         static SharedScope create();
         static SharedScope createInner(SharedScope &parent);
+        void initVariable(const std::string &name, std::optional<SharedValue> value = std::nullopt);
         [[nodiscard]] SharedValue getValue(const std::string &name);
         void setValue(const std::string &name, SharedValue &value);
+        [[nodiscard]] std::optional<SharedScope> getParent();
     };
 
     using SharedScope = std::shared_ptr<LexicalScope>;
-
+    using Storage = std::map<std::string, SharedValue>;
 }

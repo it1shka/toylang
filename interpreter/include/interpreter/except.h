@@ -5,10 +5,20 @@
 namespace interpreter::exceptions {
     class RuntimeException : public std::exception {};
 
+    class InternalException : public RuntimeException {
+        const std::string message;
+    public:
+        explicit InternalException(const std::string &reason)
+            : message("Internal exception: " + reason) {}
+        [[nodiscard]] const char* what() const noexcept override {
+            return message.c_str();
+        }
+    };
+
     class UndefinedVariableException : public RuntimeException {
         const std::string message;
         static std::string createMessage(const std::string &varname) {
-            return "Variable '" + varname + "' has not been defined yet."
+            return "Variable '" + varname + "' has not been defined yet"
         }
     public:
         explicit UndefinedVariableException(const std::string &varname)

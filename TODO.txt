@@ -19,3 +19,6 @@ WHAT I'M IMPLEMENTING RIGHT NOW:
 
     Starting interpreter
     I need to implement a good type system and lexical scope
+
+    Lexical scope, fucntions, interpreter::executeStatement,
+    operations on types

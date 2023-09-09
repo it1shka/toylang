@@ -16,12 +16,20 @@ SharedScope LexicalScope::createInner(SharedScope &parent) {
     return inner;
 }
 
+void LexicalScope::initVariable(const std::string &name, std::optional<SharedValue> value) {
+    if (value.has_value()) {
+        storage[name] = *value;
+    } else {
+        storage[name] = NilValue::getInstance();
+    }
+}
+
 SharedValue LexicalScope::getValue(const std::string &name) {
     if (storage.find(name) != storage.end()) {
         return storage[name];
     }
     if (!parent.has_value()) {
-        return NilValue::getInstance();
+        throw UndefinedVariableException(name);
     }
     return (*parent)->getValue(name);
 }
@@ -35,4 +43,8 @@ void LexicalScope::setValue(const std::string &name, SharedValue &value) {
         throw UndefinedVariableException(name);
     }
     (*parent)->setValue(name, value);
+}
+
+std::optional<SharedScope> LexicalScope::getParent() {
+    return parent;
 }

@@ -71,6 +71,7 @@ namespace interpreter::types {
         STRING;
     };
 
+    // TODO: Change it so i can do 'fun factorial(1)'
     class LexicalScope; // forward declaration to avoid cycle
     struct FunctionalObject final : AbstractBaseType {
         const std::vector<ExpressionPtr> &parameters;
