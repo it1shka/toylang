@@ -28,11 +28,14 @@ namespace interpreter::types {
         [[nodiscard]] virtual std::string toString()   const = 0;
     };
 
-    using ValuePtr = std::shared_ptr<AbstractBaseType>;
+    using SharedValue = std::shared_ptr<AbstractBaseType>;
 
     struct NilValue final : AbstractBaseType {
         TYPENAME("nil")
         STRING { return "nil"; }
+        static SharedValue getInstance();
+    private:
+        NilValue() = default;
     };
 
     struct BooleanValue final : AbstractBaseType {
@@ -61,8 +64,8 @@ namespace interpreter::types {
 
 
     struct ArrayObject final : AbstractBaseType {
-        std::vector<ValuePtr> value;
-        explicit ArrayObject(std::vector<ValuePtr> &value) : value(value) {}
+        std::vector<SharedValue> value;
+        explicit ArrayObject(std::vector<SharedValue> &value) : value(value) {}
 
         TYPENAME("array")
         STRING;
@@ -72,11 +75,11 @@ namespace interpreter::types {
     struct FunctionalObject final : AbstractBaseType {
         const std::vector<ExpressionPtr> &parameters;
         const BlockStatement &body;
-        LexicalScope &scope;
+        std::shared_ptr<LexicalScope> scope;
         FunctionalObject (
             std::vector<ExpressionPtr> &parameters,
             BlockStatement &body,
-            LexicalScope &scope
+            std::shared_ptr<LexicalScope> &scope
         ) : parameters(parameters), body(body), scope(scope) {}
 
         TYPENAME("function")

@@ -4,6 +4,11 @@
 
 using namespace interpreter::types;
 
+SharedValue NilValue::getInstance() {
+    static auto singleton = std::shared_ptr<NilValue>(new NilValue());
+    return singleton;
+}
+
 STRING_FOR(ArrayObject) {
     auto output = std::string("[");
     for (size_t i = 0; i < value.size(); i++) {
