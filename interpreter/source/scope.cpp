@@ -3,7 +3,7 @@
 #include "except.h"
 
 using namespace interpreter;
-using interpreter::exceptions::UndefinedVariableException;
+using namespace interpreter::exceptions;
 using interpreter::types::NilValue;
 
 SharedScope LexicalScope::create() {
@@ -17,6 +17,9 @@ SharedScope LexicalScope::createInner(SharedScope &parent) {
 }
 
 void LexicalScope::initVariable(const std::string &name, std::optional<SharedValue> value) {
+    if (storage.find(name) != storage.end()) {
+        throw CannotRedeclareException(name);
+    }
     if (value.has_value()) {
         storage[name] = *value;
     } else {

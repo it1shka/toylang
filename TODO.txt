@@ -23,4 +23,17 @@ WHAT I'M IMPLEMENTING RIGHT NOW:
     Lexical scope, fucntions, interpreter::executeStatement,
     operations on types
 
+    Actually I decided that there will be no
+    fancy mathematical-notated functions in that language
+    it's too hard to implement it in a good way
+    so it's better not to implement them at all
+    I'm talking about fun factorial(1) = 1
+                      fun sum(a, 1) = a + 1 etc.
+
 I NEED ANALYZER!!!
+So for now i will implement without imports and objects
+then i will add some analyzer
+after that i can implement imports and objects
+and after that i think that i can cover my interpreter with some more tests
+
++ later i still wanna develop a virtual machine

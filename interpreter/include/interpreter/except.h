@@ -35,6 +35,14 @@ namespace interpreter::exceptions {
         ENABLE_WHAT
     };
 
+    class CannotRedeclareException : public RuntimeException {
+        const std::string message;
+    public:
+        explicit CannotRedeclareException(const std::string &term)
+            : message("Cannot redeclare " + term) {}
+        ENABLE_WHAT
+    };
+
     class PropagatedException : public RuntimeException {
         const std::string message;
     public:
@@ -48,5 +56,13 @@ namespace interpreter::exceptions {
         WHAT_DECLARATION {
             return "Cannot execute error node";
         }
+    };
+
+    class ImproperNodeException : public RuntimeException {
+        const std::string message;
+    public:
+        explicit ImproperNodeException(const std::string &nodeName)
+            : message("Improper node: " + nodeName) {}
+        ENABLE_WHAT
     };
 }

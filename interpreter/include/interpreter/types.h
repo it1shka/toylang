@@ -15,6 +15,8 @@
 #include <vector>
 #include "parser/ast.h"
 #include "utils/utils.h"
+// forward declaration to avoid cycles
+namespace interpreter { class LexicalScope; }
 
 #define TYPENAME(NAME) [[nodiscard]] std::string getTypename() const override { return NAME; }
 #define STRING         [[nodiscard]] std::string toString() const override
@@ -71,15 +73,13 @@ namespace interpreter::types {
         STRING;
     };
 
-    // TODO: Change it so i can do 'fun factorial(1)'
-    class LexicalScope; // forward declaration to avoid cycle
     struct FunctionalObject final : AbstractBaseType {
         const std::vector<ExpressionPtr> &parameters;
         const BlockStatement &body;
         std::shared_ptr<LexicalScope> scope;
         FunctionalObject (
-            std::vector<ExpressionPtr> &parameters,
-            BlockStatement &body,
+            const std::vector<ExpressionPtr> &parameters,
+            const BlockStatement &body,
             std::shared_ptr<LexicalScope> &scope
         ) : parameters(parameters), body(body), scope(scope) {}
 

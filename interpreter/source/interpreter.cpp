@@ -3,6 +3,8 @@
 
 using namespace interpreter;
 using namespace interpreter::exceptions;
+using namespace parser::AST;
+using namespace interpreter::types;
 
 Interpreter::Interpreter(const Storage &initialStorage) {
     scope = LexicalScope::create();
@@ -65,12 +67,34 @@ void Interpreter::executeStatement(const StatementPtr &statement) {
         std::string description = "unknown runtime exception";
         try {
             std::rethrow_exception(currentExpression);
-        } catch(const RuntimeException &exception) {
+        } catch (const RuntimeException &exception) {
             description = std::string(exception.what());
         }
         throw PropagatedException(statement->nodeLabel(), description);
     }
 }
+
+void Interpreter::executeVariableDeclaration(const VariableDeclarationStatement *declaration) {
+    if (declaration->value) {
+        const auto value = executeExpression(*declaration->value);
+        scope->initVariable(declaration->name, value);
+    } else {
+        scope->initVariable(declaration->name);
+    }
+}
+
+void Interpreter::executeFunctionDeclaration(const FunctionDeclarationStatement *fnNode) {
+    if (fnNode->body->statementType() != BlockOfStatements) {
+        throw ImproperNodeException(fnNode->body->nodeName());
+    }
+    auto  bodyPtr = static_cast<BlockStatement*>(fnNode->body.get());
+    const auto fnObj = std::make_shared<FunctionalObject>(fnNode->parameters, *bodyPtr, scope);
+    scope->initVariable(fnNode->name, fnObj);
+}
+
+// TODO: implement loops and their operators
+
+
 
 SharedValue Interpreter::executeExpression(const ExpressionPtr &expression) {
     // TODO: ...
