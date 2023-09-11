@@ -3,6 +3,8 @@
 #include <string>
 #include "lexer/token.h"
 
+#define ENABLE_WHAT [[nodiscard]] const char* what() const noexcept override { return message.c_str(); }
+
 namespace parser::exceptions {
     class ParserException : public std::exception {};
 
@@ -11,9 +13,7 @@ namespace parser::exceptions {
     public:
         WrongTokenValueException (const std::string &expected, const Token &actualToken)
                 : message("Expected token value '" + expected + "', " + actualToken.toStringShort() + " was provided") {}
-        [[nodiscard]] const char* what() const noexcept override {
-            return message.c_str();
-        }
+        ENABLE_WHAT
     };
 
     using namespace lexer;
@@ -27,9 +27,7 @@ namespace parser::exceptions {
     public:
         WrongTokenTypeException(TokenType expected, const Token &actualToken)
             : message(createMessage(expected, actualToken)) {}
-        [[nodiscard]] const char* what() const noexcept override {
-            return message.c_str();
-        }
+        ENABLE_WHAT
     };
 
     class IllegalAtomicException final : public ParserException {
@@ -41,9 +39,7 @@ namespace parser::exceptions {
     public:
         explicit IllegalAtomicException(const Token &token)
             : message(createMessage(token)) {}
-        [[nodiscard]] const char* what() const noexcept override {
-            return message.c_str();
-        }
+        ENABLE_WHAT
     };
 
 }

@@ -22,3 +22,5 @@ WHAT I'M IMPLEMENTING RIGHT NOW:
 
     Lexical scope, fucntions, interpreter::executeStatement,
     operations on types
+
+I NEED ANALYZER!!!

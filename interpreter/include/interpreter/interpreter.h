@@ -11,7 +11,18 @@ namespace interpreter {
         void enterScope();
         void leaveScope();
         void executeStatement(const StatementPtr &statement);
-        void executeExpression(const ExpressionPtr &expression);
+        // TODO: Implement all these functions
+        void executeVariableDeclaration(const VariableDeclarationStatement* declaration);
+        void executeFunctionDeclaration(const FunctionDeclarationStatement* function);
+        void executeForLoop(const ForLoopStatement* forLoop);
+        void executeWhileLoop(const WhileLoopStatement* whileLoop);
+        void executeIfElse(const IfElseStatement* ifElse);
+        void executeContinue();
+        void executeBreak();
+        void executeReturn(const ReturnOperatorStatement* returnOp);
+        void executeBlock(const BlockStatement* block);
+        void executeBareExpression(const ExpressionStatement* bare);
+        SharedValue executeExpression(const ExpressionPtr &expression);
     public:
         explicit Interpreter(const Storage &initialStorage = {});
         void executeProgram(Program &program);

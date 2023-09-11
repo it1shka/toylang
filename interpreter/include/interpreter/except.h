@@ -2,6 +2,9 @@
 #include <stdexcept>
 #include <string>
 
+#define WHAT_DECLARATION [[nodiscard]] const char* what() const noexcept override
+#define ENABLE_WHAT WHAT_DECLARATION { return message.c_str(); }
+
 namespace interpreter::exceptions {
     class RuntimeException : public std::exception {};
 
@@ -10,9 +13,7 @@ namespace interpreter::exceptions {
     public:
         explicit InternalException(const std::string &reason)
             : message("Internal exception: " + reason) {}
-        [[nodiscard]] const char* what() const noexcept override {
-            return message.c_str();
-        }
+        ENABLE_WHAT
     };
 
     class UnimplementedException : public RuntimeException {
@@ -20,21 +21,32 @@ namespace interpreter::exceptions {
     public:
         explicit UnimplementedException(const std::string &functionality)
             : message("Unimplemented functionality: " + functionality) {}
-        [[nodiscard]] const char* what() const noexcept override {
-            return message.c_str();
-        }
+        ENABLE_WHAT
     };
 
     class UndefinedVariableException : public RuntimeException {
         const std::string message;
         static std::string createMessage(const std::string &varname) {
-            return "Variable '" + varname + "' has not been defined yet"
+            return "Variable '" + varname + "' has not been defined yet";
         }
     public:
         explicit UndefinedVariableException(const std::string &varname)
             : message(createMessage(varname)) {}
-        [[nodiscard]] const char* what() const noexcept override {
-            return message.c_str();
+        ENABLE_WHAT
+    };
+
+    class PropagatedException : public RuntimeException {
+        const std::string message;
+    public:
+        PropagatedException(const std::string &label, const std::string &old)
+            : message("At " + label + ":\n" + old) {}
+        ENABLE_WHAT
+    };
+
+    class CannotExecuteException : public RuntimeException {
+    public:
+        WHAT_DECLARATION {
+            return "Cannot execute error node";
         }
     };
 }
