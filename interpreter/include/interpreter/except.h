@@ -15,6 +15,16 @@ namespace interpreter::exceptions {
         }
     };
 
+    class UnimplementedException : public RuntimeException {
+        const std::string message;
+    public:
+        explicit UnimplementedException(const std::string &functionality)
+            : message("Unimplemented functionality: " + functionality) {}
+        [[nodiscard]] const char* what() const noexcept override {
+            return message.c_str();
+        }
+    };
+
     class UndefinedVariableException : public RuntimeException {
         const std::string message;
         static std::string createMessage(const std::string &varname) {

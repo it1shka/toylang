@@ -6,7 +6,10 @@
 #include <optional>
 #include <memory>
 #include "printer.h"
+#include "utils/utils.h"
 
+#define CUSTOM_NODE_NAME      [[nodiscard]] std::string    nodeName()       const override
+#define NODE_NAME(NAME)       CUSTOM_NODE_NAME { return NAME; }
 #define NODE_TYPE(TYPE)       [[nodiscard]] NodeType       nodeType()       const override { return TYPE; }
 #define STATEMENT_TYPE(TYPE)  [[nodiscard]] StatementType  statementType()  const override { return TYPE; }
 #define EXPRESSION_TYPE(TYPE) [[nodiscard]] ExpressionType expressionType() const override { return TYPE; }
@@ -34,7 +37,9 @@ namespace parser::AST {
             : position(std::move(position)) {}
 
         [[nodiscard]] virtual NodeType nodeType()  const = 0;
-
+        // for runtime exceptions
+        [[nodiscard]] virtual std::string nodeName() const = 0;
+        [[nodiscard]] std::string nodeLabel() const;
         // public printing functions
         [[nodiscard]] std::string toFormatString(unsigned tabSize = 4) const;
         [[nodiscard]] std::string toDebugString (unsigned tabSize = 4) const;
@@ -95,6 +100,7 @@ namespace parser::AST {
 
     // Top level node containing statements. Printable
     struct Program final : Node {
+        NODE_NAME("program")
         NODE_TYPE(NodeType::ProgramNode)
         const std::vector<StatementPtr> statements;
         Program (
@@ -112,6 +118,7 @@ namespace parser::AST {
     using enum Statement::StatementType;
 
     struct ImportLibraryStatement final : Statement {
+        NODE_NAME("import")
         STATEMENT_TYPE(LibraryImport)
         const std::string libName;
         const std::optional<std::string> alias;
@@ -124,6 +131,7 @@ namespace parser::AST {
     };
 
     struct VariableDeclarationStatement final : Statement {
+        NODE_NAME("variable declaration")
         STATEMENT_TYPE(VariableDeclaration)
         const std::string name;
         const std::optional<ExpressionPtr> value;
@@ -137,6 +145,7 @@ namespace parser::AST {
     };
 
     struct FunctionDeclarationStatement final : Statement {
+        NODE_NAME("function declaration")
         STATEMENT_TYPE(FunctionDeclaration)
         const std::string name;
         const std::vector<ExpressionPtr> parameters;
@@ -151,6 +160,7 @@ namespace parser::AST {
     };
 
     struct ForLoopStatement final : Statement {
+        NODE_NAME("for loop")
         STATEMENT_TYPE(ForLoop)
         const std::string variable;
         const ExpressionPtr start;
@@ -169,6 +179,7 @@ namespace parser::AST {
     };
 
     struct WhileLoopStatement final : Statement {
+        NODE_NAME("while loop")
         STATEMENT_TYPE(WhileLoop)
         const ExpressionPtr condition;
         const StatementPtr body;
@@ -181,6 +192,7 @@ namespace parser::AST {
     };
 
     struct IfElseStatement final : Statement {
+        NODE_NAME("if-else statement")
         STATEMENT_TYPE(IfElse)
         const ExpressionPtr condition;
         const StatementPtr mainClause;
@@ -196,18 +208,21 @@ namespace parser::AST {
     };
 
     struct ContinueOperatorStatement final : Statement {
+        NODE_NAME("continue operator")
         STATEMENT_TYPE(ContinueOperator)
         explicit ContinueOperatorStatement(Position &position) : Statement(position) {}
         ENABLE_PRINTING
     };
 
     struct BreakOperatorStatement final : Statement {
+        NODE_NAME("break operator")
         STATEMENT_TYPE(BreakOperator)
         explicit BreakOperatorStatement(Position &position) : Statement(position) {}
         ENABLE_PRINTING
     };
 
     struct ReturnOperatorStatement final : Statement {
+        NODE_NAME("return operator")
         STATEMENT_TYPE(ReturnOperator)
         const std::optional<ExpressionPtr> expression;
         ReturnOperatorStatement (
@@ -218,6 +233,7 @@ namespace parser::AST {
     };
 
     struct ExpressionStatement final : Statement {
+        NODE_NAME("bare expression")
         STATEMENT_TYPE(BareExpression)
         const ExpressionPtr expression;
         ExpressionStatement (
@@ -228,6 +244,7 @@ namespace parser::AST {
     };
 
     struct BlockStatement final : Statement {
+        NODE_NAME("block of statements")
         STATEMENT_TYPE(BlockOfStatements)
         const std::vector<StatementPtr> statements;
         BlockStatement (
@@ -238,6 +255,7 @@ namespace parser::AST {
     };
 
     struct IllegalStatement final : Statement {
+        NODE_NAME("illegal statement")
         STATEMENT_TYPE(StatementError)
         explicit IllegalStatement (Position &position) : Statement(position) {}
         ENABLE_PRINTING
@@ -247,6 +265,7 @@ namespace parser::AST {
     using enum Expression::ExpressionType;
 
     struct BinaryOperationExpression final : Expression {
+        CUSTOM_NODE_NAME { return "binary operation '" + op + "'"; }
         EXPRESSION_TYPE(BinaryOperation)
         const ExpressionPtr left;
         const ExpressionPtr right;
@@ -261,6 +280,7 @@ namespace parser::AST {
     };
 
     struct PrefixOperationExpression final : Expression {
+        CUSTOM_NODE_NAME { return "prefix operation '" + op + "'"; }
         EXPRESSION_TYPE(PrefixOperation)
         const ExpressionPtr expression;
         const std::string op;
@@ -273,6 +293,7 @@ namespace parser::AST {
     };
 
     struct CallExpression final : Expression {
+        NODE_NAME("call expression")
         EXPRESSION_TYPE(Call)
         const ExpressionPtr target;
         const std::vector<ExpressionPtr> arguments;
@@ -285,6 +306,7 @@ namespace parser::AST {
     };
 
     struct IndexAccessExpression final : Expression {
+        NODE_NAME("index access expression")
         EXPRESSION_TYPE(IndexAccess)
         const ExpressionPtr target;
         const ExpressionPtr index;
@@ -297,6 +319,7 @@ namespace parser::AST {
     };
 
     struct NumberLiteralExpression final : Expression {
+        CUSTOM_NODE_NAME { return "number '" + utils::formatNumber(value) + "'"; }
         EXPRESSION_TYPE(NumberLiteral)
         const long double value;
         NumberLiteralExpression (
@@ -307,6 +330,7 @@ namespace parser::AST {
     };
 
     struct BooleanLiteralExpression final : Expression {
+        CUSTOM_NODE_NAME { return "boolean '" + std::string(value ? "true" : "false") + "'"; }
         EXPRESSION_TYPE(BooleanLiteral)
         const bool value;
         BooleanLiteralExpression (
@@ -317,6 +341,7 @@ namespace parser::AST {
     };
 
     struct StringLiteralExpression final : Expression {
+        CUSTOM_NODE_NAME { return "string '" + utils::quotedString(value, "'") + "'"; }
         EXPRESSION_TYPE(StringLiteral)
         const std::string value;
         StringLiteralExpression (
@@ -327,6 +352,7 @@ namespace parser::AST {
     };
 
     struct ArrayLiteralExpression final : Expression {
+        NODE_NAME("array literal")
         EXPRESSION_TYPE(ArrayLiteral)
         const std::vector<ExpressionPtr> values;
         ArrayLiteralExpression (
@@ -337,12 +363,14 @@ namespace parser::AST {
     };
 
     struct NilLiteralExpression final : Expression {
+        NODE_NAME("nil literal")
         EXPRESSION_TYPE(NilLiteral)
         explicit NilLiteralExpression(Position &position) : Expression(position) {}
         ENABLE_PRINTING
     };
 
     struct VariableExpression final : Expression {
+        NODE_NAME("variable expression")
         EXPRESSION_TYPE(Variable)
         const std::string name;
         VariableExpression (
@@ -353,6 +381,7 @@ namespace parser::AST {
     };
 
     struct LambdaExpression final : Expression {
+        NODE_NAME("lambda expression")
         EXPRESSION_TYPE(Lambda)
         const std::vector<ExpressionPtr> parameters;
         const StatementPtr body;
@@ -365,6 +394,7 @@ namespace parser::AST {
     };
 
     struct IllegalExpression final : Expression {
+        NODE_NAME("illegal expression")
         EXPRESSION_TYPE(ExpressionError)
         explicit IllegalExpression (Position &position) : Expression(position) {}
         ENABLE_PRINTING

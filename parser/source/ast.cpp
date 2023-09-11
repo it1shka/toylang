@@ -12,6 +12,14 @@ using namespace parser::AST;
 
 // implementing to string functions
 
+std::string Node::nodeLabel() const {
+    const auto [line, column] = position;
+    return (
+        nodeName() + " at (line " + std::to_string(line) +
+            ", column " + std::to_string(column) + ")"
+    );
+}
+
 std::string Node::toFormatString(unsigned tabSize) const {
     auto printer = Printer(tabSize);
     acceptFormatPrinter(printer);

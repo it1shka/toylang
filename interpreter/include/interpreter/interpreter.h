@@ -11,8 +11,9 @@ namespace interpreter {
         void enterScope();
         void leaveScope();
         void executeStatement(const StatementPtr &statement);
+        void executeExpression(const ExpressionPtr &expression);
     public:
-        explicit Interpreter(const Storage &initialStorage);
+        explicit Interpreter(const Storage &initialStorage = {});
         void executeProgram(Program &program);
     };
 }

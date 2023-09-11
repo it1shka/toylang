@@ -11,7 +11,7 @@ Interpreter::Interpreter(const Storage &initialStorage) {
     }
 }
 
-void Interpreter::executeProgram(parser::AST::Program &program) {
+void Interpreter::executeProgram(Program &program) {
     for (const auto &statement : program.statements) {
         executeStatement(statement);
     }
@@ -29,6 +29,11 @@ void Interpreter::leaveScope() {
     scope = *scope->getParent();
 }
 
-void Interpreter::executeStatement(const parser::AST::StatementPtr &statement) {
-    // TODO: ...
+void Interpreter::executeStatement(const StatementPtr &statement) {
+    using enum Statement::StatementType;
+
+}
+
+void Interpreter::executeExpression(const ExpressionPtr &expression) {
+
 }
