@@ -6,7 +6,7 @@
 using namespace interpreter::types;
 
 template <AnyValue::DataType expectedType, typename expectedValue>
-expectedValue* interpreter::types::typeCast(const SharedValue& value) {
+expectedValue* interpreter::types::getCastedPointer(const SharedValue& value) {
     if (value->dataType() != expectedType) {
         throw exceptions::WrongTypeException(value->getTypename());
     }
@@ -15,7 +15,7 @@ expectedValue* interpreter::types::typeCast(const SharedValue& value) {
 }
 
 SharedValue NilValue::getInstance() {
-    static auto singleton = std::shared_ptr<NilValue>(new NilValue());
+    static const auto singleton = std::shared_ptr<NilValue>(new NilValue());
     return singleton;
 }
 
@@ -44,4 +44,6 @@ STRING_FOR(FunctionalObject) {
     return output;
 }
 
-// TODO: enable math operations at least!
+// OPERATORS IMPLEMENTATION
+// TODO: ...
+

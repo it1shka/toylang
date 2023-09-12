@@ -15,6 +15,7 @@
 #include <vector>
 #include "parser/ast.h"
 #include "utils/utils.h"
+#include "except.h"
 // forward declaration to avoid cycles
 namespace interpreter { class LexicalScope; }
 
@@ -38,7 +39,29 @@ namespace interpreter::types {
         [[nodiscard]] virtual DataType    dataType()    const = 0;
         [[nodiscard]] virtual std::string getTypename() const = 0;
         [[nodiscard]] virtual std::string toString()    const = 0;
+        // operators
+        using SharedValue = std::shared_ptr<AnyValue>;
+        // copy binary operators
+        #define BIN_OP(OPERATOR) virtual SharedValue operator OPERATOR(SharedValue &other) const;
+        BIN_OP(||) BIN_OP(&&)
+        BIN_OP(==) BIN_OP(!=)
+        BIN_OP(< ) BIN_OP(> ) BIN_OP(<=) BIN_OP(>=)
+        BIN_OP(+ ) BIN_OP(- )
+        BIN_OP(* ) BIN_OP(/ ) BIN_OP(% ) BIN_OP(& ) // & is "div"
+        BIN_OP(^ )
+        // prefix operators
+        #define PREF_OP(OPERATOR) virtual SharedValue operator OPERATOR() const;
+        PREF_OP(!) PREF_OP(-)
+        // mutate operators
+        #define ASSIGN(OPERATOR) virtual void operator OPERATOR(SharedValue &other);
+        ASSIGN(+=) ASSIGN(-=)
+        ASSIGN(*=) ASSIGN(/=)
+        ASSIGN(^=)
     };
+
+    #define OVERRIDE_BIN_OP(OPERATOR)  SharedValue operator OPERATOR(SharedValue &other) const override;
+    #define OVERRIDE_PREF_OP(OPERATOR) SharedValue operator OPERATOR()                   const override;
+    #define OVERRIDE_ASSIGN(OPERATOR)  void        operator OPERATOR(SharedValue &other)       override;
 
     using SharedValue = std::shared_ptr<AnyValue>;
     using enum AnyValue::DataType;
@@ -59,6 +82,10 @@ namespace interpreter::types {
         DATA_TYPE(BooleanType)
         TYPENAME("boolean")
         STRING { return value ? "true" : "false"; }
+
+        OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
+        OVERRIDE_BIN_OP(||) OVERRIDE_BIN_OP(&&)
+        OVERRIDE_PREF_OP(!)
     };
 
     struct NumberValue final : AnyValue {
@@ -68,6 +95,16 @@ namespace interpreter::types {
         DATA_TYPE(NumberType)
         TYPENAME("number")
         STRING { return utils::formatNumber(value); }
+
+        OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
+        OVERRIDE_BIN_OP(<)  OVERRIDE_BIN_OP(>) OVERRIDE_BIN_OP(<=) OVERRIDE_BIN_OP(>=)
+        OVERRIDE_BIN_OP(+ ) OVERRIDE_BIN_OP(- )
+        OVERRIDE_BIN_OP(* ) OVERRIDE_BIN_OP(/ ) OVERRIDE_BIN_OP(% ) OVERRIDE_BIN_OP(& )
+        OVERRIDE_BIN_OP(^ )
+        OVERRIDE_PREF_OP(-)
+        OVERRIDE_ASSIGN(+=) OVERRIDE_ASSIGN(-=)
+        OVERRIDE_ASSIGN(*=) OVERRIDE_ASSIGN(/=)
+        OVERRIDE_ASSIGN(^=)
     };
 
     struct StringValue final : AnyValue {
@@ -77,6 +114,11 @@ namespace interpreter::types {
         DATA_TYPE(StringType)
         TYPENAME("string")
         STRING { return value; }
+
+        OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
+        OVERRIDE_BIN_OP(< ) OVERRIDE_BIN_OP(> ) OVERRIDE_BIN_OP(<=) OVERRIDE_BIN_OP(>=)
+        OVERRIDE_BIN_OP(+ ) OVERRIDE_BIN_OP(* )
+        OVERRIDE_ASSIGN(+=) OVERRIDE_ASSIGN(*=)
     };
 
 
@@ -87,6 +129,12 @@ namespace interpreter::types {
         DATA_TYPE(ArrayType)
         TYPENAME("array")
         STRING;
+
+        OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
+        OVERRIDE_BIN_OP(+ ) OVERRIDE_BIN_OP(- )
+        OVERRIDE_BIN_OP(* )
+        OVERRIDE_ASSIGN(+=) OVERRIDE_ASSIGN(-=)
+        OVERRIDE_ASSIGN(*=)
     };
 
     struct FunctionalObject final : AnyValue {
@@ -102,11 +150,11 @@ namespace interpreter::types {
         DATA_TYPE(FunctionType)
         TYPENAME("function")
         STRING;
+
+        OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
     };
 
     template <AnyValue::DataType expectedType, typename expectedValue>
-    expectedValue* typeCast(const SharedValue& value);
+    expectedValue* getCastedPointer(const SharedValue& value);
 
 }
-
-// TODO: enable math operations at least!

@@ -65,4 +65,20 @@ namespace interpreter::exceptions {
             : message("Unexpected type '" + typeName + "'") {}
         ENABLE_WHAT
     };
+
+    class UnsupportedBinaryOperation : public RuntimeException {
+        const std::string message;
+    public:
+        UnsupportedBinaryOperation(const std::string& typeA, const std::string& typeB)
+            : message("Unsupported binary operation between types '" + typeA + "' and '" + typeB + "'") {}
+        ENABLE_WHAT
+    };
+
+    class UnsupportedPrefixOperation : public RuntimeException {
+        const std::string message;
+    public:
+        explicit UnsupportedPrefixOperation(const std::string& typeName)
+            : message("Unsupporeted unary operation for type '" + typeName + "'") {}
+        ENABLE_WHAT
+    };
 }

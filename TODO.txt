@@ -43,3 +43,20 @@ that will keep track of those things
 
 For break, continue and return I need to implement
 special flag in interpreter class!
+
+// copy binary operators
+        #define BIN_OP(OPERATOR) virtual SharedValue operator OPERATOR(SharedValue &other) const;
+        BIN_OP(||) BIN_OP(&&)
+        BIN_OP(==) BIN_OP(!=)
+        BIN_OP(< ) BIN_OP(> ) BIN_OP(<=) BIN_OP(>=)
+        BIN_OP(+ ) BIN_OP(- )
+        BIN_OP(* ) BIN_OP(/ ) BIN_OP(% ) BIN_OP(& ) // & is "div"
+        BIN_OP(^ )
+        // prefix operators
+        #define PREF_OP(OPERATOR) virtual SharedValue operator OPERATOR() const;
+        PREF_OP(!) PREF_OP(-)
+        // mutate operators
+        #define ASSIGN(OPERATOR) virtual void operator OPERATOR(SharedValue &other);
+        ASSIGN(+=) ASSIGN(-=)
+        ASSIGN(*=) ASSIGN(/=)
+        ASSIGN(^=)
