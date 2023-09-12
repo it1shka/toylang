@@ -1,8 +1,18 @@
 #include "types.h"
+#include "except.h"
 
 #define STRING_FOR(CLS) [[nodiscard]] std::string CLS::toString() const
 
 using namespace interpreter::types;
+
+template <AnyValue::DataType expectedType, typename expectedValue>
+expectedValue* interpreter::types::typeCast(const SharedValue& value) {
+    if (value->dataType() != expectedType) {
+        throw exceptions::WrongTypeException(value->getTypename());
+    }
+    const auto pointer = value.get();
+    return static_cast<expectedValue*>(pointer);
+}
 
 SharedValue NilValue::getInstance() {
     static auto singleton = std::shared_ptr<NilValue>(new NilValue());
@@ -30,7 +40,7 @@ STRING_FOR(FunctionalObject) {
         }
     }
     output += ")";
-    output += body.toFormatString();
+    output += body->toFormatString();
     return output;
 }
 

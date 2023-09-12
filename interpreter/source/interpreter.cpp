@@ -1,21 +1,40 @@
 #include "interpreter.h"
 #include "except.h"
+#include <iostream>
 
+using namespace parser::AST;
 using namespace interpreter;
 using namespace interpreter::exceptions;
-using namespace parser::AST;
 using namespace interpreter::types;
 
-Interpreter::Interpreter(const Storage &initialStorage) {
+Interpreter::Interpreter(const Storage &initialStorage)
+    : flowFlag(FlowFlag::SequentialFlow), returnValue(std::nullopt) {
     scope = LexicalScope::create();
     for (const auto &[key, value] : initialStorage) {
         scope->initVariable(key, value);
     }
 }
 
+std::string Interpreter::flowFlagToString(FlowFlag flag) {
+    using enum FlowFlag;
+    switch (flag) {
+        case SequentialFlow: return "sequential flow";
+        case BreakLoop:      return "loop break";
+        case ContinueLoop:   return "loop continue";
+        case ReturnValue:    return "return value";
+    }
+}
+
 void Interpreter::executeProgram(Program &program) {
-    for (const auto &statement : program.statements) {
-        executeStatement(statement);
+    try {
+        for (const auto &statement : program.statements) {
+            executeStatement(statement);
+            if (flowFlag != FlowFlag::SequentialFlow) {
+                std::cout << "Warning: ignored flow operator '" + flowFlagToString(flowFlag) + "'";
+            }
+        }
+    } catch (const RuntimeException &exception) {
+        std::cout << exception.what();
     }
 }
 
@@ -31,9 +50,8 @@ void Interpreter::leaveScope() {
     scope = *scope->getParent();
 }
 
-#define CASTED_PTR(TYPE) static_cast<TYPE*>(statement.get())
-
 void Interpreter::executeStatement(const StatementPtr &statement) {
+    #define CASTED_PTR(TYPE) static_cast<TYPE*>(statement.get())
     try {
         using enum Statement::StatementType;
         switch(statement->statementType()) {
@@ -60,7 +78,7 @@ void Interpreter::executeStatement(const StatementPtr &statement) {
             case BareExpression:
                 return executeBareExpression     (CASTED_PTR(ExpressionStatement          ));
             case StatementError:
-                throw CannotExecuteException();
+                throw ErrorNodeException();
         }
     } catch (...) {
         const auto currentExpression = std::current_exception();
@@ -74,6 +92,8 @@ void Interpreter::executeStatement(const StatementPtr &statement) {
     }
 }
 
+// STATEMENTS
+
 void Interpreter::executeVariableDeclaration(const VariableDeclarationStatement *declaration) {
     if (declaration->value) {
         const auto value = executeExpression(*declaration->value);
@@ -84,17 +104,30 @@ void Interpreter::executeVariableDeclaration(const VariableDeclarationStatement 
 }
 
 void Interpreter::executeFunctionDeclaration(const FunctionDeclarationStatement *fnNode) {
-    if (fnNode->body->statementType() != BlockOfStatements) {
-        throw ImproperNodeException(fnNode->body->nodeName());
-    }
-    auto  bodyPtr = static_cast<BlockStatement*>(fnNode->body.get());
-    const auto fnObj = std::make_shared<FunctionalObject>(fnNode->parameters, *bodyPtr, scope);
+    const auto fnObj =
+        std::make_shared<FunctionalObject> (
+            fnNode->parameters,
+            fnNode->body,
+            scope
+        );
     scope->initVariable(fnNode->name, fnObj);
 }
 
-// TODO: implement loops and their operators
+void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
+    enterScope();
 
+    const auto start = executeExpression(forLoop->start);
+    const auto end   = executeExpression(forLoop->end);
+    const auto step  = forLoop->step.has_value()
+            ? executeExpression(*forLoop->step)
+            : std::make_shared<NumberValue>(1);
 
+    // without operators defined it will be hard to implement the rest
+
+    leaveScope();
+}
+
+// EXPRESSIONS
 
 SharedValue Interpreter::executeExpression(const ExpressionPtr &expression) {
     // TODO: ...

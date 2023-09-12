@@ -7,7 +7,16 @@ using namespace parser::AST;
 
 namespace interpreter {
     class Interpreter final {
+        enum class FlowFlag {
+            SequentialFlow,
+            BreakLoop,
+            ContinueLoop,
+            ReturnValue
+        };
+        static std::string flowFlagToString(FlowFlag flag);
         SharedScope scope;
+        FlowFlag flowFlag;
+        std::optional<SharedValue> returnValue;
         void enterScope();
         void leaveScope();
         void executeStatement(const StatementPtr &statement);

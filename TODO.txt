@@ -20,7 +20,7 @@ WHAT I'M IMPLEMENTING RIGHT NOW:
     Starting interpreter
     I need to implement a good type system and lexical scope
 
-    Lexical scope, fucntions, interpreter::executeStatement,
+    Lexical scope, functions, interpreter::executeStatement,
     operations on types
 
     Actually I decided that there will be no
@@ -37,3 +37,9 @@ after that i can implement imports and objects
 and after that i think that i can cover my interpreter with some more tests
 
 + later i still wanna develop a virtual machine
+
+Implement context management -- i will create a separate structure
+that will keep track of those things
+
+For break, continue and return I need to implement
+special flag in interpreter class!

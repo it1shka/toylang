@@ -51,18 +51,18 @@ namespace interpreter::exceptions {
         ENABLE_WHAT
     };
 
-    class CannotExecuteException : public RuntimeException {
+    class ErrorNodeException : public RuntimeException {
     public:
         WHAT_DECLARATION {
             return "Cannot execute error node";
         }
     };
 
-    class ImproperNodeException : public RuntimeException {
+    class WrongTypeException : public RuntimeException {
         const std::string message;
     public:
-        explicit ImproperNodeException(const std::string &nodeName)
-            : message("Improper node: " + nodeName) {}
+        explicit WrongTypeException(const std::string &typeName)
+            : message("Unexpected type '" + typeName + "'") {}
         ENABLE_WHAT
     };
 }
