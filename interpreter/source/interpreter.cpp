@@ -28,15 +28,17 @@ std::string Interpreter::flowFlagToString(FlowFlag flag) {
 }
 
 void Interpreter::executeProgram(Program &program) {
-    try {
-        for (const auto &statement : program.statements) {
+    for (const auto &statement : program.statements) {
+        try {
             executeStatement(statement);
-            if (flowFlag != FlowFlag::SequentialFlow) {
-                warnings.push_back("Warning: ignored flow operator '" + flowFlagToString(flowFlag) + "'");
-            }
+        } catch (const RuntimeException &exception) {
+            errors.emplace_back(exception.what());
         }
-    } catch (const RuntimeException &exception) {
-        errors.emplace_back(exception.what());
+        if (flowFlag != FlowFlag::SequentialFlow) {
+            warnings.push_back("Warning: ignored flow operator '" + flowFlagToString(flowFlag) + "'");
+            flowFlag = FlowFlag::SequentialFlow;
+            returnValue = std::nullopt;
+        }
     }
 }
 

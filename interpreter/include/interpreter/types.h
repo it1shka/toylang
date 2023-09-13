@@ -12,6 +12,7 @@
 #pragma once
 #include <string>
 #include <memory>
+#include <utility>
 #include <vector>
 #include "parser/ast.h"
 #include "utils/utils.h"
@@ -110,7 +111,7 @@ namespace interpreter::types {
 
     struct StringValue final : AnyValue {
         std::string value;
-        explicit StringValue(std::string &value) : value(value) {}
+        explicit StringValue(std::string value) : value(std::move(value)) {}
 
         DATA_TYPE(StringType)
         TYPENAME("string")
@@ -122,10 +123,11 @@ namespace interpreter::types {
         OVERRIDE_ASSIGN(+=) OVERRIDE_ASSIGN(*=)
     };
 
-
     struct ArrayObject final : AnyValue {
         std::vector<SharedValue> value;
-        explicit ArrayObject(std::vector<SharedValue> &value) : value(value) {}
+        // I'm moving here -- watch out
+        // not to use the argument after the constructor
+        explicit ArrayObject(std::vector<SharedValue> &value) : value(std::move(value)) {}
 
         DATA_TYPE(ArrayType)
         TYPENAME("array")

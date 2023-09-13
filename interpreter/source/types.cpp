@@ -88,6 +88,8 @@ ASSIGN_FOR(AnyValue, ^=) UNSUPPORTED_BIN_OP
 
 #define SHARED_BOOL(VALUE)   std::make_shared<BooleanValue>(VALUE)
 #define SHARED_NUMBER(VALUE) std::make_shared<NumberValue>(VALUE)
+#define SHARED_STRING(VALUE) std::make_shared<StringValue>(VALUE)
+#define SHARED_ARRAY(VALUE)  std::make_shared<ArrayObject>(VALUE)
 
 #define NON_EQUAL_TYPES_BOOL(VALUE)                   \
     if (dataType() != other->dataType()) {            \
@@ -220,5 +222,132 @@ ASSIGN_FOR(NumberValue, ^=) {
 }
 
 // StringValue, compare, eq/neq, addition and multiplication
+BIN_OP_FOR(StringValue, ==) DEFAULT_EQ(StringValue)
 
-// TODO: ...
+BIN_OP_FOR(StringValue, !=) DEFAULT_NEQ(StringValue)
+
+#define STRING_CMP(OP)                                   \
+    BIN_OP_FOR(StringValue, OP) {                        \
+        CHECKED_CASTED_OTHER(StringType, StringValue)    \
+        return SHARED_BOOL(value OP castedOther->value); \
+    }
+
+STRING_CMP(<)
+
+STRING_CMP(>)
+
+STRING_CMP(<=)
+
+STRING_CMP(>=)
+
+BIN_OP_FOR(StringValue, +) {
+    return SHARED_STRING(value + other->toString());
+}
+
+BIN_OP_FOR(StringValue, *) {
+    CHECKED_CASTED_OTHER(NumberType, NumberValue)
+    std::string newValue;
+    for (auto i = 0; i < castedOther->value; i++) {
+        newValue += value;
+    }
+    return SHARED_STRING(newValue);
+}
+
+ASSIGN_FOR(StringValue, +=) {
+    value += other->toString();
+}
+
+ASSIGN_FOR(StringValue, *=) {
+    CHECKED_CASTED_OTHER(NumberType, NumberValue)
+    std::string newValue;
+    for (auto i = 0; i < castedOther->value; i++) {
+        newValue += value;
+    }
+    value = newValue;
+}
+
+// ArrayObject -- deep eq/neq, add, subtract, multiply
+BIN_OP_FOR(ArrayObject, ==) {
+    NON_EQUAL_TYPES_BOOL(false)
+    UNCHECKED_CASTED_OTHER(ArrayObject)
+    if (value.size() != castedOther->value.size()) {
+        return SHARED_BOOL(false);
+    }
+    for (size_t i = 0; i < value.size(); i++) {
+        if (value[i] != castedOther->value[i]) {
+            return SHARED_BOOL(false);
+        }
+    }
+    return SHARED_BOOL(true);
+}
+
+BIN_OP_FOR(ArrayObject, !=) {
+    NON_EQUAL_TYPES_BOOL(true)
+    UNCHECKED_CASTED_OTHER(ArrayObject)
+    if (value.size() != castedOther->value.size()) {
+        return SHARED_BOOL(true);
+    }
+    for (size_t i = 0; i < value.size(); i++) {
+        if (value[i] != castedOther->value[i]) {
+            return SHARED_BOOL(true);
+        }
+    }
+    return SHARED_BOOL(false);
+}
+
+BIN_OP_FOR(ArrayObject, +) {
+    auto newValue = value;
+    newValue.push_back(other);
+    return SHARED_ARRAY(newValue);
+}
+
+BIN_OP_FOR(ArrayObject, -) {
+    auto newValue = value;
+    if (const auto ptr = std::find(newValue.begin(), newValue.end(), other); ptr != newValue.end()) {
+        newValue.erase(ptr);
+    }
+    return SHARED_ARRAY(newValue);
+}
+
+BIN_OP_FOR(ArrayObject, *) {
+    CHECKED_CASTED_OTHER(NumberType, NumberValue)
+    std::vector<SharedValue> newValue;
+    for (auto i = 0; i < castedOther->value; i++) {
+        for (const auto &each : value) {
+            newValue.push_back(each);
+        }
+    }
+    return SHARED_ARRAY(newValue);
+}
+
+ASSIGN_FOR(ArrayObject, +=) {
+    value.push_back(other);
+}
+
+ASSIGN_FOR(ArrayObject, -=) {
+    if (const auto ptr = std::find(value.begin(), value.end(), other); ptr != value.end()) {
+        value.erase(ptr);
+    }
+}
+
+ASSIGN_FOR(ArrayObject, *=) {
+    CHECKED_CASTED_OTHER(NumberType, NumberValue)
+    const auto oldValue = std::move(value);
+    value = {};
+    for (auto i = 0; i < castedOther->value; i++) {
+        for (const auto &each : oldValue) {
+            value.push_back(each);
+        }
+    }
+}
+
+// FunctionalObject -- pointer eq/neq
+BIN_OP_FOR(FunctionalObject, ==) {
+    NON_EQUAL_TYPES_BOOL(false)
+    return SHARED_BOOL(this == other.get());
+}
+
+BIN_OP_FOR(FunctionalObject, !=) {
+    NON_EQUAL_TYPES_BOOL(true)
+    return SHARED_BOOL(this != other.get());
+}
