@@ -1,6 +1,5 @@
 #include "interpreter.h"
 #include "except.h"
-#include <iostream>
 
 using namespace parser::AST;
 using namespace interpreter;
@@ -8,7 +7,10 @@ using namespace interpreter::exceptions;
 using namespace interpreter::types;
 
 Interpreter::Interpreter(const Storage &initialStorage)
-    : flowFlag(FlowFlag::SequentialFlow), returnValue(std::nullopt) {
+    : flowFlag(FlowFlag::SequentialFlow),
+      returnValue(std::nullopt),
+      warnings({}),
+      errors({}) {
     scope = LexicalScope::create();
     for (const auto &[key, value] : initialStorage) {
         scope->initVariable(key, value);
@@ -30,12 +32,20 @@ void Interpreter::executeProgram(Program &program) {
         for (const auto &statement : program.statements) {
             executeStatement(statement);
             if (flowFlag != FlowFlag::SequentialFlow) {
-                std::cout << "Warning: ignored flow operator '" + flowFlagToString(flowFlag) + "'";
+                warnings.push_back("Warning: ignored flow operator '" + flowFlagToString(flowFlag) + "'");
             }
         }
     } catch (const RuntimeException &exception) {
-        std::cout << exception.what();
+        errors.emplace_back(exception.what());
     }
+}
+
+const std::vector<std::string>& Interpreter::getErrors() {
+    return errors;
+}
+
+const std::vector<std::string>& Interpreter::getWarnings() {
+    return warnings;
 }
 
 void Interpreter::enterScope() {

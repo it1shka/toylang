@@ -17,6 +17,8 @@ namespace interpreter {
         SharedScope scope;
         FlowFlag flowFlag;
         std::optional<SharedValue> returnValue;
+        std::vector<std::string> warnings;
+        std::vector<std::string> errors;
         void enterScope();
         void leaveScope();
         void executeStatement(const StatementPtr &statement);
@@ -35,5 +37,7 @@ namespace interpreter {
     public:
         explicit Interpreter(const Storage &initialStorage = {});
         void executeProgram(Program &program);
+        const std::vector<std::string>& getErrors();
+        const std::vector<std::string>& getWarnings();
     };
 }

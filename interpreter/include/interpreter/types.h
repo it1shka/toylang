@@ -70,6 +70,7 @@ namespace interpreter::types {
         DATA_TYPE(NilType)
         TYPENAME("nil")
         STRING { return "nil"; }
+        OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
         static SharedValue getInstance();
     private:
         NilValue() = default;
@@ -89,7 +90,7 @@ namespace interpreter::types {
     };
 
     struct NumberValue final : AnyValue {
-        const long double value;
+        long double value;
         explicit NumberValue(long double value) : value(value) {}
 
         DATA_TYPE(NumberType)
@@ -108,7 +109,7 @@ namespace interpreter::types {
     };
 
     struct StringValue final : AnyValue {
-        const std::string value;
+        std::string value;
         explicit StringValue(std::string &value) : value(value) {}
 
         DATA_TYPE(StringType)
