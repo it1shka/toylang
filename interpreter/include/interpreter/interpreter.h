@@ -21,8 +21,8 @@ namespace interpreter {
         std::vector<std::string> errors;
         void enterScope();
         void leaveScope();
+        // Statements:
         void executeStatement(const StatementPtr &statement);
-        // TODO: Implement all these functions
         void executeVariableDeclaration(const VariableDeclarationStatement* declaration);
         void executeFunctionDeclaration(const FunctionDeclarationStatement* function);
         void executeForLoop(const ForLoopStatement* forLoop);
@@ -33,7 +33,19 @@ namespace interpreter {
         void executeReturn(const ReturnOperatorStatement* returnOp);
         void executeBlock(const BlockStatement* block);
         void executeBareExpression(const ExpressionStatement* bare);
+        // Expressions:
         SharedValue executeExpression(const ExpressionPtr &expression);
+        SharedValue executeBinaryOperationExpression(const BinaryOperationExpression* expression);
+        SharedValue executePrefixOperationExpression(const PrefixOperationExpression* expression);
+        SharedValue executeCallExpression(const CallExpression* expression);
+        SharedValue executeIndexAccessExpression(const IndexAccessExpression* expression);
+        SharedValue executeNumberLiteralExpression(const NumberLiteralExpression* expression);
+        SharedValue executeBooleanLiteralExpression(const BooleanLiteralExpression* expression);
+        SharedValue executeStringLiteralExpression(const StringLiteralExpression* expression);
+        SharedValue executeArrayLiteralExpression(const ArrayLiteralExpression* expression);
+        SharedValue executeNilLiteralExpression();
+        SharedValue executeVariableExpression(const VariableExpression* expression);
+        SharedValue executeLambdaExpression(const LambdaExpression* expression);
     public:
         explicit Interpreter(const Storage &initialStorage = {});
         void executeProgram(Program &program);

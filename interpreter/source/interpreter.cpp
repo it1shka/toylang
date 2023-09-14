@@ -62,46 +62,49 @@ void Interpreter::leaveScope() {
     scope = *scope->getParent();
 }
 
+#define CATCH_PROPAGATE(NODE)                                           \
+    catch (...) {                                                       \
+        const auto currentExpression = std::current_exception();        \
+        std::string description = "unknown runtime exception";          \
+        try {                                                           \
+            std::rethrow_exception(currentExpression);                  \
+        } catch (const RuntimeException &exception) {                   \
+            description = std::string(exception.what());                \
+        }                                                               \
+        throw PropagatedException(NODE->nodeLabel(), description);      \
+    }
+
 void Interpreter::executeStatement(const StatementPtr &statement) {
-    #define CASTED_PTR(TYPE) static_cast<TYPE*>(statement.get())
+    #define STMT_PTR(TYPE) static_cast<TYPE*>(statement.get())
     try {
         using enum Statement::StatementType;
         switch(statement->statementType()) {
             case LibraryImport:
                 throw UnimplementedException("import");
             case VariableDeclaration:
-                return executeVariableDeclaration(CASTED_PTR(VariableDeclarationStatement ));
+                return executeVariableDeclaration(STMT_PTR(VariableDeclarationStatement ));
             case FunctionDeclaration:
-                return executeFunctionDeclaration(CASTED_PTR(FunctionDeclarationStatement ));
+                return executeFunctionDeclaration(STMT_PTR(FunctionDeclarationStatement ));
             case ForLoop:
-                return executeForLoop            (CASTED_PTR(ForLoopStatement             ));
+                return executeForLoop            (STMT_PTR(ForLoopStatement             ));
             case WhileLoop:
-                return executeWhileLoop          (CASTED_PTR(WhileLoopStatement           ));
+                return executeWhileLoop          (STMT_PTR(WhileLoopStatement           ));
             case IfElse:
-                return executeIfElse             (CASTED_PTR(IfElseStatement              ));
+                return executeIfElse             (STMT_PTR(IfElseStatement              ));
             case ContinueOperator:
                 return executeContinue();
             case BreakOperator:
                 return executeBreak();
             case ReturnOperator:
-                return executeReturn             (CASTED_PTR(ReturnOperatorStatement      ));
+                return executeReturn             (STMT_PTR(ReturnOperatorStatement      ));
             case BlockOfStatements:
-                return executeBlock              (CASTED_PTR(BlockStatement               ));
+                return executeBlock              (STMT_PTR(BlockStatement               ));
             case BareExpression:
-                return executeBareExpression     (CASTED_PTR(ExpressionStatement          ));
+                return executeBareExpression     (STMT_PTR(ExpressionStatement          ));
             case StatementError:
                 throw ErrorNodeException();
         }
-    } catch (...) {
-        const auto currentExpression = std::current_exception();
-        std::string description = "unknown runtime exception";
-        try {
-            std::rethrow_exception(currentExpression);
-        } catch (const RuntimeException &exception) {
-            description = std::string(exception.what());
-        }
-        throw PropagatedException(statement->nodeLabel(), description);
-    }
+    } CATCH_PROPAGATE(statement)
 }
 
 // STATEMENTS
@@ -209,5 +212,34 @@ void Interpreter::executeBareExpression(const ExpressionStatement *bare) {
 // EXPRESSIONS
 
 SharedValue Interpreter::executeExpression(const ExpressionPtr &expression) {
-    // TODO: ...
+    #define EXPR_PTR(TYPE) static_cast<TYPE*>(expression.get())
+    try {
+        using enum Expression::ExpressionType;
+        switch (expression->expressionType()) {
+            case BinaryOperation:
+                return executeBinaryOperationExpression(EXPR_PTR(BinaryOperationExpression));
+            case PrefixOperation:
+                return executePrefixOperationExpression(EXPR_PTR(PrefixOperationExpression));
+            case Call:
+                return executeCallExpression(EXPR_PTR(CallExpression));
+            case IndexAccess:
+                return executeIndexAccessExpression(EXPR_PTR(IndexAccessExpression));
+            case NumberLiteral:
+                return executeNumberLiteralExpression(EXPR_PTR(NumberLiteralExpression));
+            case BooleanLiteral:
+                return executeBooleanLiteralExpression(EXPR_PTR(BooleanLiteralExpression));
+            case StringLiteral:
+                return executeStringLiteralExpression(EXPR_PTR(StringLiteralExpression));
+            case ArrayLiteral:
+                return executeArrayLiteralExpression(EXPR_PTR(ArrayLiteralExpression));
+            case NilLiteral:
+                return executeNilLiteralExpression();
+            case Variable:
+                return executeVariableExpression(EXPR_PTR(VariableExpression));
+            case Lambda:
+                return executeLambdaExpression(EXPR_PTR(LambdaExpression));
+            case ExpressionError:
+                throw ErrorNodeException();
+        }
+    } CATCH_PROPAGATE(expression)
 }
