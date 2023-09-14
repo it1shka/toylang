@@ -47,9 +47,9 @@ STRING_FOR(FunctionalObject) {
 
 // OPERATORS IMPLEMENTATION
 using namespace interpreter::exceptions;
-#define BIN_OP_FOR(CLS, OP)  SharedValue CLS::operator OP(SharedValue &other) const
+#define BIN_OP_FOR(CLS, OP)  SharedValue CLS::operator OP(const SharedValue &other) const
 #define PREF_OP_FOR(CLS, OP) SharedValue CLS::operator OP()                   const
-#define ASSIGN_FOR(CLS, OP)  void        CLS::operator OP(SharedValue &other)
+#define ASSIGN_FOR(CLS, OP)  void        CLS::operator OP(const SharedValue &other)
 
 #define UNSUPPORTED_BIN_OP {                         \
     const auto typeA = getTypename();                \

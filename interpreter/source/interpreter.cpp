@@ -125,18 +125,85 @@ void Interpreter::executeFunctionDeclaration(const FunctionDeclarationStatement 
     scope->initVariable(fnNode->name, fnObj);
 }
 
+#define LOOP_FLOW_CHECK                         \
+       using enum FlowFlag;                     \
+        if (flowFlag == BreakLoop) {            \
+            flowFlag = SequentialFlow;          \
+            break;                              \
+        } else if (flowFlag == ContinueLoop) {  \
+            flowFlag = SequentialFlow;          \
+        } else if (flowFlag == ReturnValue) {   \
+            break;                              \
+        }
+
 void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
     enterScope();
 
-    const auto start = executeExpression(forLoop->start);
+    auto counter = executeExpression(forLoop->start);
     const auto end   = executeExpression(forLoop->end);
     const auto step  = forLoop->step.has_value()
             ? executeExpression(*forLoop->step)
             : std::make_shared<NumberValue>(1);
 
-    // without operators defined it will be hard to implement the rest
+    scope->initVariable(forLoop->variable, counter);
+    while (true) {
+        if (*counter >= end) break;
+        executeStatement(forLoop->body);
+        LOOP_FLOW_CHECK
+        (*counter) += step;
+    }
 
     leaveScope();
+}
+
+void Interpreter::executeWhileLoop(const WhileLoopStatement *whileLoop) {
+    while (true) {
+        const auto conditionResult = executeExpression(whileLoop->condition);
+        const auto boolResult = types::getCastedPointer<BooleanType, BooleanValue>(conditionResult);
+        if (!boolResult->value) break;
+        executeStatement(whileLoop->body);
+        LOOP_FLOW_CHECK
+    }
+}
+
+void Interpreter::executeIfElse(const IfElseStatement *ifElse) {
+    const auto conditionResult = executeExpression(ifElse->condition);
+    const auto boolResult = types::getCastedPointer<BooleanType, BooleanValue>(conditionResult);
+    if (boolResult->value) {
+        executeStatement(ifElse->mainClause);
+    } else if (ifElse->elseClause.has_value()) {
+        executeStatement(*ifElse->elseClause);
+    }
+}
+
+void Interpreter::executeContinue() {
+    flowFlag = FlowFlag::ContinueLoop;
+}
+
+void Interpreter::executeBreak() {
+    flowFlag = FlowFlag::BreakLoop;
+}
+
+void Interpreter::executeReturn(const ReturnOperatorStatement *returnOp) {
+    flowFlag = FlowFlag::ReturnValue;
+    if (returnOp->expression.has_value()) {
+        returnValue = executeExpression(*returnOp->expression);
+    }
+}
+
+void Interpreter::executeBlock(const BlockStatement *block) {
+    enterScope();
+    for (const auto &each : block->statements) {
+        executeStatement(each);
+        if (flowFlag != FlowFlag::SequentialFlow) {
+            break;
+        }
+    }
+    leaveScope();
+}
+
+void Interpreter::executeBareExpression(const ExpressionStatement *bare) {
+    executeExpression(bare->expression);
 }
 
 // EXPRESSIONS

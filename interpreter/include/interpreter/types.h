@@ -43,7 +43,7 @@ namespace interpreter::types {
         // operators
         using SharedValue = std::shared_ptr<AnyValue>;
         // copy binary operators
-        #define BIN_OP(OPERATOR) virtual SharedValue operator OPERATOR(SharedValue &other) const;
+        #define BIN_OP(OPERATOR) virtual SharedValue operator OPERATOR(const SharedValue &other) const;
         BIN_OP(||) BIN_OP(&&)
         BIN_OP(==) BIN_OP(!=)
         BIN_OP(< ) BIN_OP(> ) BIN_OP(<=) BIN_OP(>=)
@@ -54,15 +54,15 @@ namespace interpreter::types {
         #define PREF_OP(OPERATOR) virtual SharedValue operator OPERATOR() const;
         PREF_OP(!) PREF_OP(-)
         // mutate operators
-        #define ASSIGN(OPERATOR) virtual void operator OPERATOR(SharedValue &other);
+        #define ASSIGN(OPERATOR) virtual void operator OPERATOR(const SharedValue &other);
         ASSIGN(+=) ASSIGN(-=)
         ASSIGN(*=) ASSIGN(/=)
         ASSIGN(^=)
     };
 
-    #define OVERRIDE_BIN_OP(OPERATOR)  SharedValue operator OPERATOR(SharedValue &other) const override;
+    #define OVERRIDE_BIN_OP(OPERATOR)  SharedValue operator OPERATOR(const SharedValue &other) const override;
     #define OVERRIDE_PREF_OP(OPERATOR) SharedValue operator OPERATOR()                   const override;
-    #define OVERRIDE_ASSIGN(OPERATOR)  void        operator OPERATOR(SharedValue &other)       override;
+    #define OVERRIDE_ASSIGN(OPERATOR)  void        operator OPERATOR(const SharedValue &other)       override;
 
     using SharedValue = std::shared_ptr<AnyValue>;
     using enum AnyValue::DataType;
