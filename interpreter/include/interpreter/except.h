@@ -66,33 +66,53 @@ namespace interpreter::exceptions {
         ENABLE_WHAT
     };
 
-    class UnsupportedBinaryOperation : public RuntimeException {
+    class UnsupportedBinaryOperationException : public RuntimeException {
         const std::string message;
     public:
-        UnsupportedBinaryOperation(const std::string& typeA, const std::string& typeB)
+        UnsupportedBinaryOperationException(const std::string& typeA, const std::string& typeB)
             : message("Unsupported binary operation between types '" + typeA + "' and '" + typeB + "'") {}
         ENABLE_WHAT
     };
 
-    class UnsupportedPrefixOperation : public RuntimeException {
+    class UnsupportedPrefixOperationException : public RuntimeException {
         const std::string message;
     public:
-        explicit UnsupportedPrefixOperation(const std::string& typeName)
+        explicit UnsupportedPrefixOperationException(const std::string& typeName)
             : message("Unsupported unary operation for type '" + typeName + "'") {}
         ENABLE_WHAT
     };
 
-    class UnsupportedOperator : public RuntimeException {
+    class UnsupportedOperatorException : public RuntimeException {
         const std::string message;
     public:
-        explicit UnsupportedOperator(const std::string &op)
+        explicit UnsupportedOperatorException(const std::string &op)
             : message("Unsupported operator: " + op) {}
         ENABLE_WHAT
     };
 
-    class NonIntegerIndex : public RuntimeException {
+    class NonIntegerIndexException : public RuntimeException {
         WHAT_DECLARATION {
             return "Expected integer index";
         }
+    };
+
+    class ExpectedIdentifierException : public RuntimeException {
+        WHAT_DECLARATION {
+            return "Expected identifier on the left side of assignment";
+        }
+    };
+
+    class FunctionParameterWrongFormatException : public RuntimeException {
+        WHAT_DECLARATION {
+            return "Function parameters can only be either a variable or variable = default value";
+        }
+    };
+
+    class ParamsAndArgsDontMatchException : public RuntimeException {
+        const std::string message;
+    public:
+        ParamsAndArgsDontMatchException(size_t paramsSize, size_t argsSize)
+            : message("Expected " + std::to_string(paramsSize) + "arguments, found " + std::to_string(argsSize)) {}
+        ENABLE_WHAT
     };
 }

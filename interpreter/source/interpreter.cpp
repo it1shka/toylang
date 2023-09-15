@@ -11,7 +11,7 @@ Interpreter::Interpreter(const Storage &initialStorage)
     : flowFlag(FlowFlag::SequentialFlow),
       returnValue(std::nullopt),
       warnings({}),
-      errors({}) {
+      fatalError(std::nullopt) {
     scope = LexicalScope::create();
     for (const auto &[key, value] : initialStorage) {
         scope->initVariable(key, value);
@@ -29,25 +29,29 @@ std::string Interpreter::flowFlagToString(FlowFlag flag) {
 }
 
 void Interpreter::executeProgram(Program &program) {
-    for (const auto &statement : program.statements) {
-        try {
+    try {
+        for (const auto &statement : program.statements) {
             executeStatement(statement);
-        } catch (const RuntimeException &exception) {
-            errors.emplace_back(exception.what());
+            if (flowFlag != FlowFlag::SequentialFlow) {
+                warnings.push_back("Warning: ignored flow operator '" + flowFlagToString(flowFlag) + "'");
+                flowFlag = FlowFlag::SequentialFlow;
+                returnValue = std::nullopt;
+            }
         }
-        if (flowFlag != FlowFlag::SequentialFlow) {
-            warnings.push_back("Warning: ignored flow operator '" + flowFlagToString(flowFlag) + "'");
-            flowFlag = FlowFlag::SequentialFlow;
-            returnValue = std::nullopt;
-        }
+    } catch (const RuntimeException &exception) {
+        fatalError = exception.what();
     }
 }
 
-const std::vector<std::string>& Interpreter::getErrors() {
-    return errors;
+bool Interpreter::didFailed() const {
+    return fatalError.has_value();
 }
 
-const std::vector<std::string>& Interpreter::getWarnings() {
+const std::optional<std::string> &Interpreter::getFatalError() const {
+    return fatalError;
+}
+
+const std::vector<std::string>& Interpreter::getWarnings() const {
     return warnings;
 }
 
@@ -141,14 +145,13 @@ void Interpreter::executeFunctionDeclaration(const FunctionDeclarationStatement 
         }
 
 void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
-    enterScope();
-
     auto counter = executeExpression(forLoop->start);
     const auto end   = executeExpression(forLoop->end);
     const auto step  = forLoop->step.has_value()
             ? executeExpression(*forLoop->step)
             : std::make_shared<NumberValue>(1);
 
+    enterScope();
     scope->initVariable(forLoop->variable, counter);
     while (true) {
         if (*counter >= end) break;
@@ -269,7 +272,7 @@ SharedValue Interpreter::executeBinaryOperationExpression(const BinaryOperationE
     DEF_BIN_OP("mod", % )
     DEF_BIN_OP("^",   ^ )
 
-    throw UnsupportedOperator(expression->op);
+    throw UnsupportedOperatorException(expression->op);
 }
 
 SharedValue Interpreter::executeRawAssignment(const ExpressionPtr &left, const ExpressionPtr &right) {
@@ -283,10 +286,12 @@ SharedValue Interpreter::executeRawAssignment(const ExpressionPtr &left, const E
         const auto indexExpression = static_cast<IndexAccessExpression*>(left.get());
         const auto maybeIndex = executeExpression(indexExpression->index);
         const auto index = getCastedPointer<NumberType, NumberValue>(maybeIndex)->value;
-        if (!utils::isInteger(index)) throw NonIntegerIndex();
+        if (!utils::isInteger(index)) throw NonIntegerIndexException();
         const auto maybeArray = executeExpression(indexExpression->target);
         auto array = getCastedPointer<ArrayType, ArrayObject>(maybeArray)->value;
         array[static_cast<size_t>(index)] = copy;
+    } else {
+        throw ExpectedIdentifierException();
     }
 
     return copy;
@@ -300,14 +305,16 @@ SharedValue Interpreter::executePrefixOperationExpression(const PrefixOperationE
     if (expression->op == "-") {
         return -(*nested);
     }
-    throw UnsupportedOperator(expression->op);
+    throw UnsupportedOperatorException(expression->op);
 }
 
 SharedValue Interpreter::executeCallExpression(const CallExpression *expression) {
-    enterScope();
-
     const auto maybeTarget = executeExpression(expression->target);
     const auto fnPtr = getCastedPointer<FunctionType, FunctionalObject>(maybeTarget);
+
+    const auto callingScope = scope;
+    scope = fnPtr->scope;
+    enterScope();
 
     std::vector<std::string> unboundNames;
     for (const auto &param : fnPtr->parameters) {
@@ -315,23 +322,48 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
             unboundNames.push_back(static_cast<VariableExpression*>(param.get())->name);
             continue;
         }
-        // TODO: ...
+        if (param->expressionType() == BinaryOperation) {
+            const auto binOp = static_cast<BinaryOperationExpression*>(param.get());
+            if (binOp->op != "=") throw FunctionParameterWrongFormatException();
+            if (binOp->left->expressionType() == Variable) {
+                scope->initVariable(static_cast<VariableExpression*>(binOp->left.get())->name);
+            }
+            executeRawAssignment(binOp->left, binOp->right);
+            continue;
+        }
+        throw FunctionParameterWrongFormatException();
     }
 
+    if (unboundNames.size() != expression->arguments.size()) {
+        throw ParamsAndArgsDontMatchException(unboundNames.size(), expression->arguments.size());
+    }
+
+    for (size_t i = 0; i < unboundNames.size(); i++) {
+        const auto value = executeExpression(expression->arguments[i]);
+        scope->initVariable(unboundNames[i], value);
+    }
+
+    executeStatement(fnPtr->body);
+
     leaveScope();
+    scope = callingScope;
+
     if (flowFlag == FlowFlag::ReturnValue) {
         flowFlag = FlowFlag::SequentialFlow;
     }
     if (returnValue.has_value()) {
-        return *returnValue;
+        auto output = *returnValue;
+        returnValue = std::nullopt;
+        return output;
     }
+
     return NilValue::getInstance();
 }
 
 SharedValue Interpreter::executeIndexAccessExpression(const IndexAccessExpression *expression) {
     const auto maybeIndex = executeExpression(expression->index);
     const auto index = getCastedPointer<NumberType, NumberValue>(maybeIndex)->value;
-    if (!utils::isInteger(index)) throw NonIntegerIndex();
+    if (!utils::isInteger(index)) throw NonIntegerIndexException();
     const auto maybeArray = executeExpression(expression->target);
     const auto array = getCastedPointer<ArrayType, ArrayObject>(maybeArray)->value;
     return array[static_cast<size_t>(index)];

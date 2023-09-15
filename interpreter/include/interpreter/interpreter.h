@@ -18,7 +18,7 @@ namespace interpreter {
         FlowFlag flowFlag;
         std::optional<SharedValue> returnValue;
         std::vector<std::string> warnings;
-        std::vector<std::string> errors;
+        std::optional<std::string> fatalError;
         void enterScope();
         void leaveScope();
         // Statements:
@@ -49,7 +49,8 @@ namespace interpreter {
     public:
         explicit Interpreter(const Storage &initialStorage = {});
         void executeProgram(Program &program);
-        const std::vector<std::string>& getErrors();
-        const std::vector<std::string>& getWarnings();
+        [[nodiscard]] bool didFailed() const;
+        [[nodiscard]] const std::optional<std::string>& getFatalError() const;
+        [[nodiscard]] const std::vector<std::string>& getWarnings() const;
     };
 }

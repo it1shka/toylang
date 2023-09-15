@@ -57,12 +57,12 @@ using namespace interpreter::exceptions;
 #define UNSUPPORTED_BIN_OP {                         \
     const auto typeA = getTypename();                \
     const auto typeB = other->getTypename();         \
-    throw UnsupportedBinaryOperation(typeA, typeB);  \
+    throw UnsupportedBinaryOperationException(typeA, typeB);  \
 }
 
 #define UNSUPPORTED_PREF_OP {                   \
     const auto typeName = getTypename();        \
-    throw UnsupportedPrefixOperation(typeName); \
+    throw UnsupportedPrefixOperationException(typeName); \
 }
 
 // AnyValue -- all operations are not supported
