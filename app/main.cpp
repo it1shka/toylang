@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include "parser/parser.h"
+#include "interpreter/interpreter.h"
 
 auto getInput() -> std::string {
     std::string output, line;
@@ -9,7 +10,7 @@ auto getInput() -> std::string {
         std::cout << "> ";
         std::getline(std::cin, line);
         if (line == "exit") return "exit";
-        if (line == "STOP") break;
+        if (line == "FEED") break;
         output += line + "\n";
     }
     return output;
@@ -23,11 +24,13 @@ int main() {
         std::istringstream stream(input);
         auto parser = parser::Parser(stream);
         auto ast = parser.readProgram();
-        std::cout << ast->toDebugString(2) << std::endl;
-        std::cout << ast->toFormatString(2) << std::endl;
-        for (const auto &each : parser.getErrors()) {
+        auto interpreter = interpreter::Interpreter();
+        interpreter.executeProgram(*ast);
+        if (interpreter.didFailed()) {
+            std::cout << *interpreter.getFatalError() << std::endl;
+        }
+        for (const auto &each : interpreter.getWarnings()) {
             std::cout << each << std::endl;
         }
-
     }
 }

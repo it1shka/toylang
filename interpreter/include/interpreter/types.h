@@ -67,6 +67,17 @@ namespace interpreter::types {
     using SharedValue = std::shared_ptr<AnyValue>;
     using enum AnyValue::DataType;
 
+    template <AnyValue::DataType expectedType, typename expectedValue>
+    expectedValue* getCastedPointer(const SharedValue& value) {
+        if (value->dataType() != expectedType) {
+            throw exceptions::WrongTypeException(value->getTypename());
+        }
+        const auto pointer = value.get();
+        return static_cast<expectedValue*>(pointer);
+    }
+
+    SharedValue copyForAssignment(SharedValue &value);
+
     struct NilValue final : AnyValue {
         DATA_TYPE(NilType)
         TYPENAME("nil")
@@ -157,26 +168,4 @@ namespace interpreter::types {
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
     };
 
-    template <AnyValue::DataType expectedType, typename expectedValue>
-    expectedValue* getCastedPointer(const SharedValue& value);
-
-    SharedValue copyForAssignment(SharedValue &value) {
-        #define COPY_VALUE(TYPE)                                  \
-                return std::make_shared<TYPE> (            \
-                    static_cast<TYPE*>(value.get())->value \
-                );
-
-        switch (value->dataType()) {
-            case ArrayType: case FunctionType:
-                return value;
-            case NilType:
-                return NilValue::getInstance();
-            case BooleanType:
-                COPY_VALUE(BooleanValue)
-            case NumberType:
-                COPY_VALUE(NumberValue)
-            case StringType:
-                COPY_VALUE(StringValue)
-        }
-    }
 }
