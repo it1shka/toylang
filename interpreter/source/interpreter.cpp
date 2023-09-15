@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "except.h"
+#include "utils/utils.h"
 
 using namespace parser::AST;
 using namespace interpreter;
@@ -221,25 +222,150 @@ SharedValue Interpreter::executeExpression(const ExpressionPtr &expression) {
             case PrefixOperation:
                 return executePrefixOperationExpression(EXPR_PTR(PrefixOperationExpression));
             case Call:
-                return executeCallExpression(EXPR_PTR(CallExpression));
+                return executeCallExpression           (EXPR_PTR(CallExpression           ));
             case IndexAccess:
-                return executeIndexAccessExpression(EXPR_PTR(IndexAccessExpression));
+                return executeIndexAccessExpression    (EXPR_PTR(IndexAccessExpression    ));
             case NumberLiteral:
-                return executeNumberLiteralExpression(EXPR_PTR(NumberLiteralExpression));
+                return executeNumberLiteralExpression  (EXPR_PTR(NumberLiteralExpression  ));
             case BooleanLiteral:
-                return executeBooleanLiteralExpression(EXPR_PTR(BooleanLiteralExpression));
+                return executeBooleanLiteralExpression (EXPR_PTR(BooleanLiteralExpression ));
             case StringLiteral:
-                return executeStringLiteralExpression(EXPR_PTR(StringLiteralExpression));
+                return executeStringLiteralExpression  (EXPR_PTR(StringLiteralExpression  ));
             case ArrayLiteral:
-                return executeArrayLiteralExpression(EXPR_PTR(ArrayLiteralExpression));
+                return executeArrayLiteralExpression   (EXPR_PTR(ArrayLiteralExpression   ));
             case NilLiteral:
-                return executeNilLiteralExpression();
+                return NilValue::getInstance();
             case Variable:
-                return executeVariableExpression(EXPR_PTR(VariableExpression));
+                return executeVariableExpression       (EXPR_PTR(VariableExpression       ));
             case Lambda:
-                return executeLambdaExpression(EXPR_PTR(LambdaExpression));
+                return executeLambdaExpression         (EXPR_PTR(LambdaExpression         ));
             case ExpressionError:
-                throw ErrorNodeException();
+                throw ErrorNodeException               ();
         }
     } CATCH_PROPAGATE(expression)
+}
+
+
+SharedValue Interpreter::executeBinaryOperationExpression(const BinaryOperationExpression *expression) {
+    if (expression->op == "=") return executeRawAssignment(expression->left, expression->right);
+
+    const auto left = executeExpression(expression->left);
+    const auto right = executeExpression(expression->right);
+    #define DEF_BIN_OP(OP_NAME,OP_VAL) if (expression->op == OP_NAME) return *left OP_VAL right;
+
+    DEF_BIN_OP("or",  ||)
+    DEF_BIN_OP("and", &&)
+    DEF_BIN_OP("==",  ==)
+    DEF_BIN_OP("!=",  !=)
+    DEF_BIN_OP(">",   > )
+    DEF_BIN_OP("<",   < )
+    DEF_BIN_OP(">=",  >=)
+    DEF_BIN_OP("<=",  <=)
+    DEF_BIN_OP("-",   - )
+    DEF_BIN_OP("+",   + )
+    DEF_BIN_OP("*",   * )
+    DEF_BIN_OP("/",   / )
+    DEF_BIN_OP("div", & )
+    DEF_BIN_OP("mod", % )
+    DEF_BIN_OP("^",   ^ )
+
+    throw UnsupportedOperator(expression->op);
+}
+
+SharedValue Interpreter::executeRawAssignment(const ExpressionPtr &left, const ExpressionPtr &right) {
+    auto rvalue = executeExpression(right);
+    auto copy = copyForAssignment(rvalue);
+
+    if (left->expressionType() == Variable) {
+        const auto varExpression = static_cast<VariableExpression*>(left.get());
+        scope->setValue(varExpression->name, copy);
+    } else if (left->expressionType() == IndexAccess) {
+        const auto indexExpression = static_cast<IndexAccessExpression*>(left.get());
+        const auto maybeIndex = executeExpression(indexExpression->index);
+        const auto index = getCastedPointer<NumberType, NumberValue>(maybeIndex)->value;
+        if (!utils::isInteger(index)) throw NonIntegerIndex();
+        const auto maybeArray = executeExpression(indexExpression->target);
+        auto array = getCastedPointer<ArrayType, ArrayObject>(maybeArray)->value;
+        array[static_cast<size_t>(index)] = copy;
+    }
+
+    return copy;
+}
+
+SharedValue Interpreter::executePrefixOperationExpression(const PrefixOperationExpression *expression) {
+    const auto nested = executeExpression(expression->expression);
+    if (expression->op == "not") {
+        return !(*nested);
+    }
+    if (expression->op == "-") {
+        return -(*nested);
+    }
+    throw UnsupportedOperator(expression->op);
+}
+
+SharedValue Interpreter::executeCallExpression(const CallExpression *expression) {
+    enterScope();
+
+    const auto maybeTarget = executeExpression(expression->target);
+    const auto fnPtr = getCastedPointer<FunctionType, FunctionalObject>(maybeTarget);
+
+    std::vector<std::string> unboundNames;
+    for (const auto &param : fnPtr->parameters) {
+        if (param->expressionType() == Variable) {
+            unboundNames.push_back(static_cast<VariableExpression*>(param.get())->name);
+            continue;
+        }
+        // TODO: ...
+    }
+
+    leaveScope();
+    if (flowFlag == FlowFlag::ReturnValue) {
+        flowFlag = FlowFlag::SequentialFlow;
+    }
+    if (returnValue.has_value()) {
+        return *returnValue;
+    }
+    return NilValue::getInstance();
+}
+
+SharedValue Interpreter::executeIndexAccessExpression(const IndexAccessExpression *expression) {
+    const auto maybeIndex = executeExpression(expression->index);
+    const auto index = getCastedPointer<NumberType, NumberValue>(maybeIndex)->value;
+    if (!utils::isInteger(index)) throw NonIntegerIndex();
+    const auto maybeArray = executeExpression(expression->target);
+    const auto array = getCastedPointer<ArrayType, ArrayObject>(maybeArray)->value;
+    return array[static_cast<size_t>(index)];
+}
+
+SharedValue Interpreter::executeNumberLiteralExpression(const NumberLiteralExpression *expression) {
+    return std::make_shared<NumberValue>(expression->value);
+}
+
+SharedValue Interpreter::executeBooleanLiteralExpression(const BooleanLiteralExpression *expression) {
+    return std::make_shared<BooleanValue>(expression->value);
+}
+
+SharedValue Interpreter::executeStringLiteralExpression(const StringLiteralExpression *expression) {
+    return std::make_shared<StringValue>(expression->value);
+}
+
+SharedValue Interpreter::executeArrayLiteralExpression(const ArrayLiteralExpression *expression) {
+    std::vector<SharedValue> values;
+    for (const auto &each : expression->values) {
+        const auto value = executeExpression(each);
+        values.push_back(value);
+    }
+    return std::make_shared<ArrayObject>(values);
+}
+
+SharedValue Interpreter::executeVariableExpression(const VariableExpression *expression) {
+    return scope->getValue(expression->name);
+}
+
+SharedValue Interpreter::executeLambdaExpression(const LambdaExpression *expression) {
+    return std::make_shared<FunctionalObject> (
+        expression->parameters,
+        expression->body,
+        scope
+    );
 }

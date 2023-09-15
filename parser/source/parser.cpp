@@ -399,14 +399,14 @@ struct ParserParameter {
 using enum ParserParameter::Associativity;
 
 const std::vector<ParserParameter> PARSER_PARAMETERS {
-        {{"^"},                               Right },
-        {{"*", "/", "div", "mod"},            Left  },
-        {{"+", "-"},                          Left  },
-        {{">", "<", ">=", "<="},              Left  },
-        {{"==", "!="},                        Left  },
-        {{"and"},                             Left  },
-        {{"or"},                              Left  },
-        {{"=", "+=", "-=", "*=", "/=", "^="}, Left  },
+        {{"^"},                               Right  },
+        {{"*", "/", "div", "mod"},            Left   },
+        {{"+", "-"},                          Left   },
+        {{">", "<", ">=", "<="},              Left   },
+        {{"==", "!="},                        Left   },
+        {{"and"},                             Left   },
+        {{"or"},                              Left   },
+        {{"=", "+=", "-=", "*=", "/=", "^="}, Right  },
 };
 
 ExpressionParser Parser::compileParser() {

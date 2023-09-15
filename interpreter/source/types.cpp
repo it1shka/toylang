@@ -6,6 +6,9 @@
 
 using namespace interpreter::types;
 
+// copying mechanism
+
+
 template <AnyValue::DataType expectedType, typename expectedValue>
 expectedValue* interpreter::types::getCastedPointer(const SharedValue& value) {
     if (value->dataType() != expectedType) {

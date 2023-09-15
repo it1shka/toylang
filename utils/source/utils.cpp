@@ -32,3 +32,8 @@ std::string utils::quotedString(const std::string &source, const std::string &qu
     stringReplace(output, "\n", "\\n");
     return quote + output + quote;
 }
+
+bool utils::isInteger(long double value, long double tolerance) {
+    long double truncatedValue = std::trunc(value);
+    return std::abs(value - truncatedValue) < tolerance;
+}

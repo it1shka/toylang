@@ -78,7 +78,21 @@ namespace interpreter::exceptions {
         const std::string message;
     public:
         explicit UnsupportedPrefixOperation(const std::string& typeName)
-            : message("Unsupporeted unary operation for type '" + typeName + "'") {}
+            : message("Unsupported unary operation for type '" + typeName + "'") {}
         ENABLE_WHAT
+    };
+
+    class UnsupportedOperator : public RuntimeException {
+        const std::string message;
+    public:
+        explicit UnsupportedOperator(const std::string &op)
+            : message("Unsupported operator: " + op) {}
+        ENABLE_WHAT
+    };
+
+    class NonIntegerIndex : public RuntimeException {
+        WHAT_DECLARATION {
+            return "Expected integer index";
+        }
     };
 }

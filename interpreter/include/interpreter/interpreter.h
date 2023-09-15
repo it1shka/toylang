@@ -36,14 +36,14 @@ namespace interpreter {
         // Expressions:
         SharedValue executeExpression(const ExpressionPtr &expression);
         SharedValue executeBinaryOperationExpression(const BinaryOperationExpression* expression);
+        SharedValue executeRawAssignment(const ExpressionPtr &left, const ExpressionPtr &right);
         SharedValue executePrefixOperationExpression(const PrefixOperationExpression* expression);
         SharedValue executeCallExpression(const CallExpression* expression);
         SharedValue executeIndexAccessExpression(const IndexAccessExpression* expression);
-        SharedValue executeNumberLiteralExpression(const NumberLiteralExpression* expression);
-        SharedValue executeBooleanLiteralExpression(const BooleanLiteralExpression* expression);
-        SharedValue executeStringLiteralExpression(const StringLiteralExpression* expression);
+        static SharedValue executeNumberLiteralExpression(const NumberLiteralExpression* expression);
+        static SharedValue executeBooleanLiteralExpression(const BooleanLiteralExpression* expression);
+        static SharedValue executeStringLiteralExpression(const StringLiteralExpression* expression);
         SharedValue executeArrayLiteralExpression(const ArrayLiteralExpression* expression);
-        SharedValue executeNilLiteralExpression();
         SharedValue executeVariableExpression(const VariableExpression* expression);
         SharedValue executeLambdaExpression(const LambdaExpression* expression);
     public:

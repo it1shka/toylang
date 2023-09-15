@@ -29,6 +29,7 @@ using namespace parser::AST;
 namespace interpreter::types {
 
     struct AnyValue {
+        using SharedValue = std::shared_ptr<AnyValue>;
         enum class DataType {
             NilType,
             BooleanType,
@@ -41,7 +42,6 @@ namespace interpreter::types {
         [[nodiscard]] virtual std::string getTypename() const = 0;
         [[nodiscard]] virtual std::string toString()    const = 0;
         // operators
-        using SharedValue = std::shared_ptr<AnyValue>;
         // copy binary operators
         #define BIN_OP(OPERATOR) virtual SharedValue operator OPERATOR(const SharedValue &other) const;
         BIN_OP(||) BIN_OP(&&)
@@ -160,4 +160,23 @@ namespace interpreter::types {
     template <AnyValue::DataType expectedType, typename expectedValue>
     expectedValue* getCastedPointer(const SharedValue& value);
 
+    SharedValue copyForAssignment(SharedValue &value) {
+        #define COPY_VALUE(TYPE)                                  \
+                return std::make_shared<TYPE> (            \
+                    static_cast<TYPE*>(value.get())->value \
+                );
+
+        switch (value->dataType()) {
+            case ArrayType: case FunctionType:
+                return value;
+            case NilType:
+                return NilValue::getInstance();
+            case BooleanType:
+                COPY_VALUE(BooleanValue)
+            case NumberType:
+                COPY_VALUE(NumberValue)
+            case StringType:
+                COPY_VALUE(StringValue)
+        }
+    }
 }
