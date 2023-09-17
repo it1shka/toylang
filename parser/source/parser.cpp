@@ -66,6 +66,7 @@ StatementPtr Parser::readStatement() {
     if (currentValue == "break"   ) return readBreakOperator();
     if (currentValue == "return"  ) return readReturnOperator();
     if (currentValue == "{"       ) return readBlockOfStatements();
+    if (currentValue == "echo"    ) return readEchoStatement();
     return readBareExpression();
 }
 
@@ -211,6 +212,16 @@ StatementPtr Parser::readBlockOfStatements() noexcept {
         const auto block = new BlockStatement(statements, startPosition);
         return std::unique_ptr<BlockStatement>(block);
     END_CATCHING_BLOCK(IllegalStatement, "block statement")
+}
+
+StatementPtr Parser::readEchoStatement() noexcept {
+    CATCHING_BLOCK
+        expectValueToBe("echo");
+        auto expression = readExpression();
+        expectValueToBe(";");
+        const auto echo = new EchoStatement(expression, startPosition);
+        return std::unique_ptr<EchoStatement>(echo);
+    END_CATCHING_BLOCK(IllegalStatement, "echo statement")
 }
 
 // expressions

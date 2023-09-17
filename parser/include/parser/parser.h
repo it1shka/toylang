@@ -28,6 +28,7 @@ namespace parser {
         StatementPtr readReturnOperator() noexcept;
         StatementPtr readBareExpression() noexcept;
         StatementPtr readBlockOfStatements() noexcept;
+        StatementPtr readEchoStatement() noexcept;
         // expressions
         ExpressionPtr readExpression() noexcept;
         ExpressionPtr readLeftBinOp(const std::set<std::string> &ops, const ExpressionParser &next);

@@ -15,8 +15,8 @@ namespace interpreter {
         };
         static std::string flowFlagToString(FlowFlag flag);
         SharedScope scope;
-        FlowFlag flowFlag;
-        std::optional<SharedValue> returnValue;
+        FlowFlag flowRegister;
+        std::optional<SharedValue> returnRegister;
         std::vector<std::string> warnings;
         std::optional<std::string> fatalError;
         void enterScope();
@@ -32,6 +32,7 @@ namespace interpreter {
         void executeBreak();
         void executeReturn(const ReturnOperatorStatement* returnOp);
         void executeBlock(const BlockStatement* block);
+        void executeEcho(const EchoStatement* echo);
         void executeBareExpression(const ExpressionStatement* bare);
         // Expressions:
         SharedValue executeExpression(const ExpressionPtr &expression);

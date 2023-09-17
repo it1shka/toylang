@@ -164,6 +164,12 @@ FORMAT_FOR(BlockStatement) {
     printer << "}";
 }
 
+FORMAT_FOR(EchoStatement) {
+    printer << "echo ";
+    expression->acceptFormatPrinter(printer);
+    printer << ";";
+}
+
 FORMAT_FOR(IllegalStatement) {
     printer << "ERROR";
 }
@@ -378,6 +384,11 @@ DEBUG_FOR(ExpressionStatement) {
 DEBUG_FOR(BlockStatement) {
     PUSH_LABEL("[block]")
     NESTED_DEBUG_EACH(statements)
+}
+
+DEBUG_FOR(EchoStatement) {
+    PUSH_LABEL("[echo]")
+    NESTED_DEBUG(expression)
 }
 
 DEBUG_FOR(IllegalStatement) {

@@ -14,6 +14,7 @@ const std::set<std::string> KEYWORDS {
     "true", "false",                // boolean literals
     "nil",                          // for nil type
     "import", "as",                 // import system
+    "echo",                         // special word for logging
 };
 
 const std::set<std::string> OPERATORS {

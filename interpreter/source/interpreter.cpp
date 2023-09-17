@@ -1,3 +1,4 @@
+#include <iostream>
 #include "interpreter.h"
 #include "except.h"
 #include "utils/utils.h"
@@ -8,8 +9,8 @@ using namespace interpreter::exceptions;
 using namespace interpreter::types;
 
 Interpreter::Interpreter(const Storage &initialStorage)
-    : flowFlag(FlowFlag::SequentialFlow),
-      returnValue(std::nullopt),
+    : flowRegister(FlowFlag::SequentialFlow),
+      returnRegister(std::nullopt),
       warnings({}),
       fatalError(std::nullopt) {
     scope = LexicalScope::create();
@@ -32,10 +33,10 @@ void Interpreter::executeProgram(Program &program) {
     try {
         for (const auto &statement : program.statements) {
             executeStatement(statement);
-            if (flowFlag != FlowFlag::SequentialFlow) {
-                warnings.push_back("Warning: ignored flow operator '" + flowFlagToString(flowFlag) + "'");
-                flowFlag = FlowFlag::SequentialFlow;
-                returnValue = std::nullopt;
+            if (flowRegister != FlowFlag::SequentialFlow) {
+                warnings.push_back("Warning: ignored flow operator '" + flowFlagToString(flowRegister) + "'");
+                flowRegister = FlowFlag::SequentialFlow;
+                returnRegister = std::nullopt;
             }
         }
     } catch (const RuntimeException &exception) {
@@ -106,6 +107,8 @@ void Interpreter::executeStatement(const StatementPtr &statement) {
                 return executeBlock              (STMT_PTR(BlockStatement               ));
             case BareExpression:
                 return executeBareExpression     (STMT_PTR(ExpressionStatement          ));
+            case Echo:
+                return executeEcho               (STMT_PTR(EchoStatement                ));
             case StatementError:
                 throw ErrorNodeException();
         }
@@ -133,15 +136,15 @@ void Interpreter::executeFunctionDeclaration(const FunctionDeclarationStatement 
     scope->initVariable(fnNode->name, fnObj);
 }
 
-#define LOOP_FLOW_CHECK                         \
-       using enum FlowFlag;                     \
-        if (flowFlag == BreakLoop) {            \
-            flowFlag = SequentialFlow;          \
-            break;                              \
-        } else if (flowFlag == ContinueLoop) {  \
-            flowFlag = SequentialFlow;          \
-        } else if (flowFlag == ReturnValue) {   \
-            break;                              \
+#define LOOP_FLOW_CHECK                             \
+       using enum FlowFlag;                         \
+        if (flowRegister == BreakLoop) {            \
+            flowRegister = SequentialFlow;          \
+            break;                                  \
+        } else if (flowRegister == ContinueLoop) {  \
+            flowRegister = SequentialFlow;          \
+        } else if (flowRegister == ReturnValue) {   \
+            break;                                  \
         }
 
 void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
@@ -154,7 +157,9 @@ void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
     enterScope();
     scope->initVariable(forLoop->variable, counter);
     while (true) {
-        if (*counter >= end) break;
+        const auto result = *counter >= end;
+        const auto booleanResult = static_cast<BooleanValue*>(result.get());
+        if (booleanResult->value) break;
         executeStatement(forLoop->body);
         LOOP_FLOW_CHECK
         (*counter) += step;
@@ -184,25 +189,25 @@ void Interpreter::executeIfElse(const IfElseStatement *ifElse) {
 }
 
 void Interpreter::executeContinue() {
-    flowFlag = FlowFlag::ContinueLoop;
+    flowRegister = FlowFlag::ContinueLoop;
 }
 
 void Interpreter::executeBreak() {
-    flowFlag = FlowFlag::BreakLoop;
+    flowRegister = FlowFlag::BreakLoop;
 }
 
 void Interpreter::executeReturn(const ReturnOperatorStatement *returnOp) {
-    flowFlag = FlowFlag::ReturnValue;
-    if (returnOp->expression.has_value()) {
-        returnValue = executeExpression(*returnOp->expression);
+    if (returnOp->expression) {
+        returnRegister = executeExpression(*returnOp->expression);
     }
+    flowRegister = FlowFlag::ReturnValue;
 }
 
 void Interpreter::executeBlock(const BlockStatement *block) {
     enterScope();
     for (const auto &each : block->statements) {
         executeStatement(each);
-        if (flowFlag != FlowFlag::SequentialFlow) {
+        if (flowRegister != FlowFlag::SequentialFlow) {
             break;
         }
     }
@@ -211,6 +216,11 @@ void Interpreter::executeBlock(const BlockStatement *block) {
 
 void Interpreter::executeBareExpression(const ExpressionStatement *bare) {
     executeExpression(bare->expression);
+}
+
+void Interpreter::executeEcho(const EchoStatement *echo) {
+    const auto toPrint = executeExpression(echo->expression);
+    std::cout << toPrint->toString() << std::endl;
 }
 
 // EXPRESSIONS
@@ -250,11 +260,10 @@ SharedValue Interpreter::executeExpression(const ExpressionPtr &expression) {
 
 
 SharedValue Interpreter::executeBinaryOperationExpression(const BinaryOperationExpression *expression) {
-    if (expression->op == "=") return executeRawAssignment(expression->left, expression->right);
-
-    const auto left = executeExpression(expression->left);
+    auto left = executeExpression(expression->left);
     const auto right = executeExpression(expression->right);
     #define DEF_BIN_OP(OP_NAME,OP_VAL) if (expression->op == OP_NAME) return *left OP_VAL right;
+    #define DEF_ASSIGN(OP_NAME,OP_VAL) if (expression->op == OP_NAME) { *left OP_VAL right; return left; }
 
     DEF_BIN_OP("or",  ||)
     DEF_BIN_OP("and", &&)
@@ -271,6 +280,12 @@ SharedValue Interpreter::executeBinaryOperationExpression(const BinaryOperationE
     DEF_BIN_OP("div", & )
     DEF_BIN_OP("mod", % )
     DEF_BIN_OP("^",   ^ )
+
+    DEF_ASSIGN("+=",  +=)
+    DEF_ASSIGN("-=",  -=)
+    DEF_ASSIGN("*=",  *=)
+    DEF_ASSIGN("/=",  /=)
+    DEF_ASSIGN("^=",  ^=)
 
     throw UnsupportedOperatorException(expression->op);
 }
@@ -312,6 +327,12 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
     const auto maybeTarget = executeExpression(expression->target);
     const auto fnPtr = getCastedPointer<FunctionType, FunctionalObject>(maybeTarget);
 
+    std::vector<SharedValue> arguments;
+    for (const auto &each : expression->arguments) {
+        auto value = executeExpression(each);
+        arguments.push_back(value);
+    }
+
     const auto callingScope = scope;
     scope = fnPtr->scope;
     enterScope();
@@ -334,13 +355,12 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
         throw FunctionParameterWrongFormatException();
     }
 
-    if (unboundNames.size() != expression->arguments.size()) {
+    if (unboundNames.size() != arguments.size()) {
         throw ParamsAndArgsDontMatchException(unboundNames.size(), expression->arguments.size());
     }
 
     for (size_t i = 0; i < unboundNames.size(); i++) {
-        const auto value = executeExpression(expression->arguments[i]);
-        scope->initVariable(unboundNames[i], value);
+        scope->initVariable(unboundNames[i], arguments[i]);
     }
 
     executeStatement(fnPtr->body);
@@ -348,13 +368,13 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
     leaveScope();
     scope = callingScope;
 
-    if (flowFlag == FlowFlag::ReturnValue) {
-        flowFlag = FlowFlag::SequentialFlow;
+    if (flowRegister == FlowFlag::ReturnValue) {
+        flowRegister = FlowFlag::SequentialFlow;
     }
-    if (returnValue.has_value()) {
-        auto output = *returnValue;
-        returnValue = std::nullopt;
-        return output;
+    if (returnRegister.has_value()) {
+        auto value = *returnRegister;
+        returnRegister = std::nullopt;
+        return value;
     }
 
     return NilValue::getInstance();

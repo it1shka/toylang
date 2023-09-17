@@ -22,8 +22,16 @@ int main() {
         if (input == "exit") break;
 
         std::istringstream stream(input);
+
         auto parser = parser::Parser(stream);
         auto ast = parser.readProgram();
+        if (!parser.getErrors().empty()) {
+            for (const auto &each : parser.getErrors()) {
+                std::cout << each << std::endl;
+            }
+            continue;
+        }
+
         auto interpreter = interpreter::Interpreter();
         interpreter.executeProgram(*ast);
         if (interpreter.didFailed()) {
@@ -32,5 +40,6 @@ int main() {
         for (const auto &each : interpreter.getWarnings()) {
             std::cout << each << std::endl;
         }
+        std::cout << std::endl;
     }
 }

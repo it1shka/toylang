@@ -63,6 +63,7 @@ namespace parser::AST {
             ReturnOperator,
             BareExpression,
             BlockOfStatements,
+            Echo,
             StatementError
         };
         explicit Statement(Position &position)
@@ -251,6 +252,17 @@ namespace parser::AST {
             std::vector<StatementPtr> &statements,
             Position &position
         ) : statements(std::move(statements)), Statement(position) {}
+        ENABLE_PRINTING
+    };
+
+    struct EchoStatement final : Statement {
+        NODE_NAME("echo statement")
+        STATEMENT_TYPE(Echo)
+        const ExpressionPtr expression;
+        EchoStatement(
+            ExpressionPtr &expression,
+            Position &position
+        ) : expression(std::move(expression)), Statement(position) {}
         ENABLE_PRINTING
     };
 

@@ -2,3 +2,10 @@
 2. Imlement objects and member "dot" operator
 3. Code analyzer
 4. better import statements
+
+FUCKING FUNCTIONS NOT WORKING RECURSIVELY FUCK FUCK I HATE
+I HATE IT FUCK KILL ME PLS
+
+CHANGE VECTOR OF RETURN VALUES BACK!!!
+
+let f = lambda(a) { if (a < 2) return a; return f(a - 2) + f(a - 1); };
