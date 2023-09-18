@@ -317,11 +317,12 @@ BIN_OP_FOR(ArrayObject, +) {
 }
 
 BIN_OP_FOR(ArrayObject, -) {
-    auto newValue = value;
-    if (const auto ptr = std::find(newValue.begin(), newValue.end(), other); ptr != newValue.end()) {
-        newValue.erase(ptr);
+    std::vector<SharedValue> next;
+    for (auto &each : value) {
+        const auto boolValue = static_cast<BooleanValue*>((*each != other).get())->value;
+        if (!boolValue) next.push_back(each);
     }
-    return SHARED_ARRAY(newValue);
+    return SHARED_ARRAY(next);
 }
 
 BIN_OP_FOR(ArrayObject, *) {

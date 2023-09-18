@@ -1,0 +1,10 @@
+fun factorial(a) {
+    let output = 1;
+    for (i from 1 to a) {
+        output *= i;
+    }
+    return output;
+}
+
+let result = factorial(10);
+echo "The factorial of 10 is: " + result;
