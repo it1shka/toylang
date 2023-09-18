@@ -76,7 +76,7 @@ namespace interpreter::types {
         return static_cast<expectedValue*>(pointer);
     }
 
-    SharedValue copyForAssignment(SharedValue &value);
+    SharedValue copyForAssignment(const SharedValue &value);
 
     struct NilValue final : AnyValue {
         DATA_TYPE(NilType)

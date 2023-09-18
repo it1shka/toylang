@@ -8,11 +8,13 @@ using namespace interpreter::types;
 
 // copying mechanism
 
-SharedValue interpreter::types::copyForAssignment(SharedValue &value) {
-#define COPY_VALUE(TYPE)                                  \
-                return std::make_shared<TYPE> (            \
-                    static_cast<TYPE*>(value.get())->value \
-                );
+SharedValue interpreter::types::copyForAssignment(const SharedValue &value) {
+    #define COPY_VALUE(TYPE)                                  \
+        return std::shared_ptr<TYPE> (                        \
+            new TYPE (                                        \
+                static_cast<const TYPE*>(value.get())->value  \
+            )                                                 \
+        );
 
     switch (value->dataType()) {
         case ArrayType: case FunctionType:

@@ -17,7 +17,6 @@ namespace interpreter {
         SharedScope scope;
         FlowFlag flowRegister;
         std::optional<SharedValue> returnRegister;
-        std::vector<std::string> warnings;
         std::optional<std::string> fatalError;
         void enterScope();
         void leaveScope();
@@ -34,6 +33,7 @@ namespace interpreter {
         void executeBlock(const BlockStatement* block);
         void executeEcho(const EchoStatement* echo);
         void executeBareExpression(const ExpressionStatement* bare);
+        auto getPlacePointer(const IndexAccessExpression* indexExpression);
         // Expressions:
         SharedValue executeExpression(const ExpressionPtr &expression);
         SharedValue executeBinaryOperationExpression(const BinaryOperationExpression* expression);
@@ -52,6 +52,5 @@ namespace interpreter {
         void executeProgram(Program &program);
         [[nodiscard]] bool didFailed() const;
         [[nodiscard]] const std::optional<std::string>& getFatalError() const;
-        [[nodiscard]] const std::vector<std::string>& getWarnings() const;
     };
 }

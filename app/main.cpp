@@ -34,11 +34,10 @@ int main() {
 
         auto interpreter = interpreter::Interpreter();
         interpreter.executeProgram(*ast);
+
+        std::cout << std::endl;
         if (interpreter.didFailed()) {
             std::cout << *interpreter.getFatalError() << std::endl;
-        }
-        for (const auto &each : interpreter.getWarnings()) {
-            std::cout << each << std::endl;
         }
         std::cout << std::endl;
     }

@@ -11,7 +11,6 @@ using namespace interpreter::types;
 Interpreter::Interpreter(const Storage &initialStorage)
     : flowRegister(FlowFlag::SequentialFlow),
       returnRegister(std::nullopt),
-      warnings({}),
       fatalError(std::nullopt) {
     scope = LexicalScope::create();
     for (const auto &[key, value] : initialStorage) {
@@ -34,9 +33,8 @@ void Interpreter::executeProgram(Program &program) {
         for (const auto &statement : program.statements) {
             executeStatement(statement);
             if (flowRegister != FlowFlag::SequentialFlow) {
-                warnings.push_back("Warning: ignored flow operator '" + flowFlagToString(flowRegister) + "'");
-                flowRegister = FlowFlag::SequentialFlow;
-                returnRegister = std::nullopt;
+                const auto opName = flowFlagToString(flowRegister);
+                throw MisplacedFlowOperator(opName);
             }
         }
     } catch (const RuntimeException &exception) {
@@ -50,10 +48,6 @@ bool Interpreter::didFailed() const {
 
 const std::optional<std::string> &Interpreter::getFatalError() const {
     return fatalError;
-}
-
-const std::vector<std::string>& Interpreter::getWarnings() const {
-    return warnings;
 }
 
 void Interpreter::enterScope() {
@@ -120,7 +114,8 @@ void Interpreter::executeStatement(const StatementPtr &statement) {
 void Interpreter::executeVariableDeclaration(const VariableDeclarationStatement *declaration) {
     if (declaration->value) {
         const auto value = executeExpression(*declaration->value);
-        scope->initVariable(declaration->name, value);
+        const auto copied = types::copyForAssignment(value);
+        scope->initVariable(declaration->name, copied);
     } else {
         scope->initVariable(declaration->name);
     }
@@ -155,6 +150,7 @@ void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
             : std::make_shared<NumberValue>(1);
 
     enterScope();
+
     scope->initVariable(forLoop->variable, counter);
     while (true) {
         const auto result = *counter >= end;
@@ -260,6 +256,10 @@ SharedValue Interpreter::executeExpression(const ExpressionPtr &expression) {
 
 
 SharedValue Interpreter::executeBinaryOperationExpression(const BinaryOperationExpression *expression) {
+    if (expression->op == "=") {
+        return executeRawAssignment(expression->left, expression->right);
+    }
+
     auto left = executeExpression(expression->left);
     const auto right = executeExpression(expression->right);
     #define DEF_BIN_OP(OP_NAME,OP_VAL) if (expression->op == OP_NAME) return *left OP_VAL right;
@@ -290,6 +290,21 @@ SharedValue Interpreter::executeBinaryOperationExpression(const BinaryOperationE
     throw UnsupportedOperatorException(expression->op);
 }
 
+auto Interpreter::getPlacePointer(const IndexAccessExpression* indexExpression) {
+    const auto maybeIndex = executeExpression(indexExpression->index);
+    const auto floatingIndex = getCastedPointer<NumberType, NumberValue>(maybeIndex)->value;
+    if (!utils::isInteger(floatingIndex)) throw NonIntegerIndexException();
+    if (floatingIndex < 0) throw NegativeArrayIndexException();
+    const auto integerIndex = static_cast<long>(floatingIndex);
+
+    const auto maybeArray = executeExpression(indexExpression->target);
+    auto arrayObject = getCastedPointer<ArrayType, ArrayObject>(maybeArray);
+    if (integerIndex >= arrayObject->value.size()) throw IndexOutOfBoundsException(integerIndex);
+
+    const auto placePointer = arrayObject->value.begin() + integerIndex;
+    return placePointer;
+}
+
 SharedValue Interpreter::executeRawAssignment(const ExpressionPtr &left, const ExpressionPtr &right) {
     auto rvalue = executeExpression(right);
     auto copy = copyForAssignment(rvalue);
@@ -299,12 +314,8 @@ SharedValue Interpreter::executeRawAssignment(const ExpressionPtr &left, const E
         scope->setValue(varExpression->name, copy);
     } else if (left->expressionType() == IndexAccess) {
         const auto indexExpression = static_cast<IndexAccessExpression*>(left.get());
-        const auto maybeIndex = executeExpression(indexExpression->index);
-        const auto index = getCastedPointer<NumberType, NumberValue>(maybeIndex)->value;
-        if (!utils::isInteger(index)) throw NonIntegerIndexException();
-        const auto maybeArray = executeExpression(indexExpression->target);
-        auto array = getCastedPointer<ArrayType, ArrayObject>(maybeArray)->value;
-        array[static_cast<size_t>(index)] = copy;
+        const auto placePointer = getPlacePointer(indexExpression);
+        *placePointer = copy;
     } else {
         throw ExpectedIdentifierException();
     }
@@ -329,8 +340,9 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
 
     std::vector<SharedValue> arguments;
     for (const auto &each : expression->arguments) {
-        auto value = executeExpression(each);
-        arguments.push_back(value);
+        const auto value = executeExpression(each);
+        const auto copied = types::copyForAssignment(value);
+        arguments.push_back(copied);
     }
 
     const auto callingScope = scope;
@@ -368,9 +380,12 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
     leaveScope();
     scope = callingScope;
 
-    if (flowRegister == FlowFlag::ReturnValue) {
-        flowRegister = FlowFlag::SequentialFlow;
+    if (flowRegister != FlowFlag::ReturnValue && flowRegister != FlowFlag::SequentialFlow) {
+        const auto opName = flowFlagToString(flowRegister);
+        throw MisplacedFlowOperator(opName);
     }
+
+    flowRegister = FlowFlag::SequentialFlow;
     if (returnRegister.has_value()) {
         auto value = *returnRegister;
         returnRegister = std::nullopt;
@@ -381,12 +396,8 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
 }
 
 SharedValue Interpreter::executeIndexAccessExpression(const IndexAccessExpression *expression) {
-    const auto maybeIndex = executeExpression(expression->index);
-    const auto index = getCastedPointer<NumberType, NumberValue>(maybeIndex)->value;
-    if (!utils::isInteger(index)) throw NonIntegerIndexException();
-    const auto maybeArray = executeExpression(expression->target);
-    const auto array = getCastedPointer<ArrayType, ArrayObject>(maybeArray)->value;
-    return array[static_cast<size_t>(index)];
+    const auto placePointer = getPlacePointer(expression);
+    return *placePointer;
 }
 
 SharedValue Interpreter::executeNumberLiteralExpression(const NumberLiteralExpression *expression) {

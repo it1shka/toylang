@@ -115,4 +115,26 @@ namespace interpreter::exceptions {
             : message("Expected " + std::to_string(paramsSize) + "arguments, found " + std::to_string(argsSize)) {}
         ENABLE_WHAT
     };
+
+    class IndexOutOfBoundsException : public RuntimeException {
+        const std::string message;
+    public:
+        explicit IndexOutOfBoundsException(size_t index)
+            : message("Index " + std::to_string(index) + " is out of bounds") {}
+        ENABLE_WHAT
+    };
+
+    class NegativeArrayIndexException : public RuntimeException {
+        WHAT_DECLARATION {
+            return "Index of array cannot be negative";
+        }
+    };
+
+    class MisplacedFlowOperator : public RuntimeException {
+        const std::string message;
+    public:
+        explicit MisplacedFlowOperator(const std::string &opName)
+            : message("Misplaced flow operator: " + opName) {}
+        ENABLE_WHAT
+    };
 }
