@@ -112,7 +112,7 @@ namespace interpreter::exceptions {
         const std::string message;
     public:
         ParamsAndArgsDontMatchException(size_t paramsSize, size_t argsSize)
-            : message("Expected " + std::to_string(paramsSize) + "arguments, found " + std::to_string(argsSize)) {}
+            : message("Expected " + std::to_string(paramsSize) + " argument(s), found " + std::to_string(argsSize)) {}
         ENABLE_WHAT
     };
 

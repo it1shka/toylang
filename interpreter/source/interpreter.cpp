@@ -2,6 +2,7 @@
 #include "interpreter.h"
 #include "except.h"
 #include "utils/utils.h"
+#include "prelude.h"
 
 using namespace parser::AST;
 using namespace interpreter;
@@ -13,6 +14,9 @@ Interpreter::Interpreter(const Storage &initialStorage)
       returnRegister(std::nullopt),
       fatalError(std::nullopt) {
     scope = LexicalScope::create();
+    for (const auto &[key, value] : prelude::getPrelude()) {
+        scope->initVariable(key, value);
+    }
     for (const auto &[key, value] : initialStorage) {
         scope->initVariable(key, value);
     }

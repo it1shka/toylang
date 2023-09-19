@@ -3,6 +3,5 @@
 #include "types.h"
 
 namespace interpreter::prelude {
-    using namespace interpreter::types;
-    const std::map<std::string, SharedValue>& getPrelude();
+    const std::map<std::string, types::SharedValue>& getPrelude();
 }

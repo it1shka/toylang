@@ -45,7 +45,7 @@ auto executeCode(std::istream& stream) -> void {
     parser::Parser _parser(stream);
     const auto ast = _parser.readProgram();
     if (!_parser.getErrors().empty()) {
-        std::cerr << "Encountered errors while parsing: " << std::endl << std::endl;
+        std::cerr << "Encountered errors while parsing: " << std::endl;
         for (const auto &each : _parser.getErrors()) {
             std::cerr << each << std::endl;
         }
@@ -55,7 +55,7 @@ auto executeCode(std::istream& stream) -> void {
     _interpreter.executeProgram(*ast);
     const auto maybeError = _interpreter.getFatalError();
     if (maybeError.has_value()) {
-        std::cerr << std::endl << "Encountered a fatal error during runtime: " << std::endl << std::endl;
+        std::cerr << std::endl << "Encountered a fatal error during runtime: "  << std::endl;
         std::cerr << maybeError.value() << std::endl;
     }
 }

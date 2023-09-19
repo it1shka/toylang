@@ -21,7 +21,7 @@
 namespace interpreter { class LexicalScope; }
 
 #define TYPENAME(NAME)  [[nodiscard]] std::string getTypename() const override { return NAME; }
-#define STRING          [[nodiscard]] std::string toString()    const override
+#define DECL_STRING          [[nodiscard]] std::string toString()    const override
 #define DATA_TYPE(TYPE) [[nodiscard]] DataType    dataType()    const override { return TYPE; }
 
 using namespace parser::AST;
@@ -82,7 +82,7 @@ namespace interpreter::types {
     struct NilValue final : AnyValue {
         DATA_TYPE(NilType)
         TYPENAME("nil")
-        STRING { return "nil"; }
+        DECL_STRING { return "nil"; }
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
         static SharedValue getInstance();
     private:
@@ -95,7 +95,7 @@ namespace interpreter::types {
 
         DATA_TYPE(BooleanType)
         TYPENAME("boolean")
-        STRING { return value ? "true" : "false"; }
+        DECL_STRING { return value ? "true" : "false"; }
 
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
         OVERRIDE_BIN_OP(||) OVERRIDE_BIN_OP(&&)
@@ -108,7 +108,7 @@ namespace interpreter::types {
 
         DATA_TYPE(NumberType)
         TYPENAME("number")
-        STRING { return utils::formatNumber(value); }
+        DECL_STRING { return utils::formatNumber(value); }
 
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
         OVERRIDE_BIN_OP(<)  OVERRIDE_BIN_OP(>) OVERRIDE_BIN_OP(<=) OVERRIDE_BIN_OP(>=)
@@ -127,7 +127,7 @@ namespace interpreter::types {
 
         DATA_TYPE(StringType)
         TYPENAME("string")
-        STRING { return value; }
+        DECL_STRING { return value; }
 
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
         OVERRIDE_BIN_OP(< ) OVERRIDE_BIN_OP(> ) OVERRIDE_BIN_OP(<=) OVERRIDE_BIN_OP(>=)
@@ -143,7 +143,7 @@ namespace interpreter::types {
 
         DATA_TYPE(ArrayType)
         TYPENAME("array")
-        STRING;
+        DECL_STRING;
 
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
         OVERRIDE_BIN_OP(+ ) OVERRIDE_BIN_OP(- )
@@ -164,21 +164,21 @@ namespace interpreter::types {
 
         DATA_TYPE(FunctionType)
         TYPENAME("function")
-        STRING;
+        DECL_STRING;
 
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
     };
 
     struct BuiltinFunction final : AnyValue {
-        using CppFunction = std::function<SharedValue(const std::vector<SharedValue>&)>;
+        using CppFunction = std::function<auto (const std::vector<SharedValue>&) -> SharedValue>;
         const CppFunction cppCode;
         explicit BuiltinFunction (
-            CppFunction &function
+            CppFunction function
         ) : cppCode(std::move(function)) {}
 
         DATA_TYPE(BuiltinType)
         TYPENAME("builtin")
-        STRING;
+        DECL_STRING;
 
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
     };
