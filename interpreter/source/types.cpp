@@ -164,7 +164,7 @@ PREF_OP_FOR(BooleanValue, !) {
 // NumberValue -- math operations + mut math operations + comparisons
 BIN_OP_FOR(NumberValue, ==) DEFAULT_EQ(NumberValue)
 
-BIN_OP_FOR(NumberValue, !=) DEFAULT_EQ(NumberValue)
+BIN_OP_FOR(NumberValue, !=) DEFAULT_NEQ(NumberValue)
 
 #define NUMBER_CMP(OP)                                   \
     BIN_OP_FOR(NumberValue, OP) {                        \
@@ -289,7 +289,10 @@ BIN_OP_FOR(ArrayObject, ==) {
         return SHARED_BOOL(false);
     }
     for (size_t i = 0; i < value.size(); i++) {
-        if (value[i] != castedOther->value[i]) {
+        const auto mineValue = value[i];
+        const auto otherValue = castedOther->value[i];
+        const auto result = static_cast<BooleanValue*>((*mineValue == otherValue).get());
+        if (!result->value) {
             return SHARED_BOOL(false);
         }
     }
@@ -303,7 +306,10 @@ BIN_OP_FOR(ArrayObject, !=) {
         return SHARED_BOOL(true);
     }
     for (size_t i = 0; i < value.size(); i++) {
-        if (value[i] != castedOther->value[i]) {
+        const auto mineValue = value[i];
+        const auto otherValue = castedOther->value[i];
+        const auto result = static_cast<BooleanValue*>((*mineValue == otherValue).get());
+        if (!result->value) {
             return SHARED_BOOL(true);
         }
     }
@@ -314,15 +320,6 @@ BIN_OP_FOR(ArrayObject, +) {
     auto newValue = value;
     newValue.push_back(other);
     return SHARED_ARRAY(newValue);
-}
-
-BIN_OP_FOR(ArrayObject, -) {
-    std::vector<SharedValue> next;
-    for (auto &each : value) {
-        const auto boolValue = static_cast<BooleanValue*>((*each != other).get())->value;
-        if (!boolValue) next.push_back(each);
-    }
-    return SHARED_ARRAY(next);
 }
 
 BIN_OP_FOR(ArrayObject, *) {
@@ -340,12 +337,6 @@ ASSIGN_FOR(ArrayObject, +=) {
     value.push_back(other);
 }
 
-ASSIGN_FOR(ArrayObject, -=) {
-    if (const auto ptr = std::find(value.begin(), value.end(), other); ptr != value.end()) {
-        value.erase(ptr);
-    }
-}
-
 ASSIGN_FOR(ArrayObject, *=) {
     CHECKED_CASTED_OTHER(NumberType, NumberValue)
     const auto oldValue = std::move(value);
@@ -355,6 +346,24 @@ ASSIGN_FOR(ArrayObject, *=) {
             value.push_back(each);
         }
     }
+}
+
+ASSIGN_FOR(ArrayObject, -=) {
+    const auto oldValue = std::move(value);
+    value = {};
+    for (auto &each : oldValue) {
+        const auto boolValue = static_cast<BooleanValue*>((*each != other).get())->value;
+        if (boolValue) value.push_back(each);
+    }
+}
+
+BIN_OP_FOR(ArrayObject, -) {
+    std::vector<SharedValue> next;
+    for (auto &each : value) {
+        const auto boolValue = static_cast<BooleanValue*>((*each != other).get())->value;
+        if (boolValue) next.push_back(each);
+    }
+    return SHARED_ARRAY(next);
 }
 
 // FunctionalObject -- pointer eq/neq
