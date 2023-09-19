@@ -335,9 +335,6 @@ SharedValue Interpreter::executePrefixOperationExpression(const PrefixOperationE
 }
 
 SharedValue Interpreter::executeCallExpression(const CallExpression *expression) {
-    const auto maybeTarget = executeExpression(expression->target);
-    const auto fnPtr = getCastedPointer<FunctionType, FunctionalObject>(maybeTarget);
-
     std::vector<SharedValue> arguments;
     for (const auto &each : expression->arguments) {
         const auto value = executeExpression(each);
@@ -345,6 +342,13 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
         arguments.push_back(copied);
     }
 
+    const auto maybeTarget = executeExpression(expression->target);
+    if (maybeTarget->dataType() == BuiltinType) {
+        const auto builtin = static_cast<BuiltinFunction*>(maybeTarget.get());
+        return builtin->cppCode(arguments);
+    }
+
+    const auto fnPtr = getCastedPointer<FunctionType, FunctionalObject>(maybeTarget);
     const auto callingScope = scope;
     scope = fnPtr->scope;
     enterScope();

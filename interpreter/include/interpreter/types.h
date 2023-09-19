@@ -36,7 +36,8 @@ namespace interpreter::types {
             NumberType,
             StringType,
             ArrayType,
-            FunctionType
+            FunctionType,
+            BuiltinType,
         };
         [[nodiscard]] virtual DataType    dataType()    const = 0;
         [[nodiscard]] virtual std::string getTypename() const = 0;
@@ -163,6 +164,20 @@ namespace interpreter::types {
 
         DATA_TYPE(FunctionType)
         TYPENAME("function")
+        STRING;
+
+        OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
+    };
+
+    struct BuiltinFunction final : AnyValue {
+        using CppFunction = std::function<SharedValue(const std::vector<SharedValue>&)>;
+        const CppFunction cppCode;
+        explicit BuiltinFunction (
+            CppFunction &function
+        ) : cppCode(std::move(function)) {}
+
+        DATA_TYPE(BuiltinType)
+        TYPENAME("builtin")
         STRING;
 
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)

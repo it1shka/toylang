@@ -17,7 +17,7 @@ SharedValue interpreter::types::copyForAssignment(const SharedValue &value) {
         );
 
     switch (value->dataType()) {
-        case ArrayType: case FunctionType:
+        case ArrayType: case FunctionType: case BuiltinType:
             return value;
         case NilType:
             return NilValue::getInstance();
@@ -58,6 +58,10 @@ STRING_FOR(FunctionalObject) {
     output += ")";
     output += body->toFormatString();
     return output;
+}
+
+STRING_FOR(BuiltinFunction) {
+    return "built-in";
 }
 
 // OPERATORS IMPLEMENTATION
@@ -373,6 +377,16 @@ BIN_OP_FOR(FunctionalObject, ==) {
 }
 
 BIN_OP_FOR(FunctionalObject, !=) {
+    NON_EQUAL_TYPES_BOOL(true)
+    return SHARED_BOOL(this != other.get());
+}
+
+BIN_OP_FOR(BuiltinFunction, ==) {
+    NON_EQUAL_TYPES_BOOL(false)
+    return SHARED_BOOL(this == other.get());
+}
+
+BIN_OP_FOR(BuiltinFunction, !=) {
     NON_EQUAL_TYPES_BOOL(true)
     return SHARED_BOOL(this != other.get());
 }
