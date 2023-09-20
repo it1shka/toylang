@@ -4,6 +4,9 @@
 #include <memory>
 #include <tuple>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <ios>
 
 #define NUMBER(VALUE) std::make_shared<NumberValue>(VALUE)
 #define BOOL(VALUE)   std::make_shared<BooleanValue>(VALUE)
@@ -191,8 +194,52 @@ const std::map<std::string, SharedValue>& interpreter::prelude::getPrelude() {
                 }
                 return ARRAY(newArray);
             })},
-            // TODO: Complete this shit
-            // TODO: sorted, slice, reversed
+            {"read", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(1)
+                const auto name = getCastedPointer<StringType, StringValue>(args[0]);
+                std::ifstream filestream(name->value);
+                if (filestream.bad() || !filestream.is_open()) {
+                    return NIL;
+                }
+                std::stringstream stream;
+                stream << filestream.rdbuf();
+                if (stream.bad()) {
+                    return NIL;
+                }
+                return STRING(stream.str());
+            })},
+            {"write", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(2)
+                const auto name = getCastedPointer<StringType, StringValue>(args[0]);
+                const auto content = args[1];
+
+                std::ofstream filestream(name->value, std::ios::out | std::ios::trunc);
+                if (!filestream.is_open()) {
+                    return BOOL(false);
+                }
+
+                filestream << content->toString();
+
+                if (filestream.bad()) {
+                    return BOOL(false);
+                }
+
+                filestream.close();
+                return BOOL(true);
+            })},
+            {"round", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(1)
+                const auto number = getCastedPointer<NumberType, NumberValue>(args[0])->value;
+                const auto rounded = round(number);
+                return NUMBER(rounded);
+            })},
+            {"trunc", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(1)
+                const auto number = getCastedPointer<NumberType, NumberValue>(args[0])->value;
+                const auto truncated = trunc(number);
+                return NUMBER(truncated);
+            })}
+            // TODO: complete the standard library
     };
     return preludeMap;
 }

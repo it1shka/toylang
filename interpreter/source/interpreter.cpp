@@ -147,22 +147,24 @@ void Interpreter::executeFunctionDeclaration(const FunctionDeclarationStatement 
         }
 
 void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
-    auto counter = executeExpression(forLoop->start);
+    const auto start = executeExpression(forLoop->start);
     const auto end   = executeExpression(forLoop->end);
     const auto step  = forLoop->step.has_value()
             ? executeExpression(*forLoop->step)
             : std::make_shared<NumberValue>(1);
 
     enterScope();
+    scope->initVariable(forLoop->variable, start);
 
-    scope->initVariable(forLoop->variable, counter);
     while (true) {
+        const auto counter = scope->getValue(forLoop->variable);
         const auto result = *counter >= end;
         const auto booleanResult = static_cast<BooleanValue*>(result.get());
         if (booleanResult->value) break;
         executeStatement(forLoop->body);
         LOOP_FLOW_CHECK
-        (*counter) += step;
+        auto nextCounter = *counter + step;
+        scope->setValue(forLoop->variable, nextCounter);
     }
 
     leaveScope();
