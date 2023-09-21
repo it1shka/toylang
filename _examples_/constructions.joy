@@ -27,3 +27,6 @@ if (condition) {
     # if false
 }
 
+captured {
+
+}

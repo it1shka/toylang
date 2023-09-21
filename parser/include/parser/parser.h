@@ -36,6 +36,7 @@ namespace parser {
         ExpressionPtr readPrefixOperation();
         ExpressionPtr readPostfixOperation();
         ExpressionPtr readAtomicExpression() noexcept;
+        ExpressionPtr readObjectExpression() noexcept;
         ExpressionPtr readLambdaExpression() noexcept;
         // helper functions
         std::vector<ExpressionPtr> readExpressionList(const std::string &start, const std::string &end);

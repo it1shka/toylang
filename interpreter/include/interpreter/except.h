@@ -124,6 +124,14 @@ namespace interpreter::exceptions {
         ENABLE_WHAT
     };
 
+    class WrongIndexAccessTargetException : public RuntimeException {
+        const std::string message;
+    public:
+        explicit WrongIndexAccessTargetException(const std::string& name)
+            : message("Expected array or object as target, found: " + name) {}
+        ENABLE_WHAT
+    };
+
     class NegativeArrayIndexException : public RuntimeException {
         WHAT_DECLARATION {
             return "Index of array cannot be negative";

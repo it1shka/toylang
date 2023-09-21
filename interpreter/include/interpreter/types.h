@@ -16,12 +16,13 @@
 #include <vector>
 #include "parser/ast.h"
 #include "utils/utils.h"
+#include <map>
 #include "except.h"
 // forward declaration to avoid cycles
 namespace interpreter { class LexicalScope; }
 
 #define TYPENAME(NAME)  [[nodiscard]] std::string getTypename() const override { return NAME; }
-#define DECL_STRING          [[nodiscard]] std::string toString()    const override
+#define DECL_STRING     [[nodiscard]] std::string toString()    const override
 #define DATA_TYPE(TYPE) [[nodiscard]] DataType    dataType()    const override { return TYPE; }
 
 using namespace parser::AST;
@@ -37,6 +38,7 @@ namespace interpreter::types {
             StringType,
             ArrayType,
             FunctionType,
+            ObjectType,
             BuiltinType,
         };
         [[nodiscard]] virtual DataType    dataType()    const = 0;
@@ -164,6 +166,18 @@ namespace interpreter::types {
 
         DATA_TYPE(FunctionType)
         TYPENAME("function")
+        DECL_STRING;
+
+        OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)
+    };
+
+    struct UserObject final : AnyValue {
+        std::map<std::string, SharedValue> value;
+        explicit UserObject(std::map<std::string, SharedValue> &value)
+            : value(std::move(value)) {}
+
+        DATA_TYPE(ObjectType)
+        TYPENAME("object")
         DECL_STRING;
 
         OVERRIDE_BIN_OP(==) OVERRIDE_BIN_OP(!=)

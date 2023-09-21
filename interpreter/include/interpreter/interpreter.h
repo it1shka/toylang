@@ -33,7 +33,7 @@ namespace interpreter {
         void executeBlock(const BlockStatement* block);
         void executeEcho(const EchoStatement* echo);
         void executeBareExpression(const ExpressionStatement* bare);
-        auto getPlacePointer(const IndexAccessExpression* indexExpression);
+        SharedValue* getPlacePointer(const IndexAccessExpression* indexExpression);
         // Expressions:
         SharedValue executeExpression(const ExpressionPtr &expression);
         SharedValue executeBinaryOperationExpression(const BinaryOperationExpression* expression);
@@ -47,6 +47,7 @@ namespace interpreter {
         SharedValue executeArrayLiteralExpression(const ArrayLiteralExpression* expression);
         SharedValue executeVariableExpression(const VariableExpression* expression);
         SharedValue executeLambdaExpression(const LambdaExpression* expression);
+        SharedValue executeObjectExpression(const ObjectExpression* objExpr);
     public:
         explicit Interpreter(const Storage &initialStorage = {});
         void executeProgram(Program &program);

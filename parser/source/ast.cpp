@@ -4,6 +4,7 @@
 
 #include "ast.h"
 #include "utils/utils.h"
+#include <tuple>
 
 using namespace parser::AST;
 
@@ -219,6 +220,22 @@ FORMAT_FOR(LambdaExpression) {
     }
     printer << ")";
     body->acceptFormatPrinter(printer);
+}
+
+FORMAT_FOR(ObjectExpression) {
+    printer << "obj {\n";
+    printer.increaseTabLevel();
+    for (size_t i = 0; i < objectList.size(); i++) {
+        printer.pad();
+        std::get<0>(objectList[i])->acceptFormatPrinter(printer);
+        printer << ": ";
+        std::get<1>(objectList[i])->acceptFormatPrinter(printer);
+        if (i != objectList.size() - 1) {
+            printer << ",\n";
+        }
+    }
+    printer.decreaseTabLevel();
+    printer << "\n}";
 }
 
 FORMAT_FOR(IllegalExpression) {
@@ -446,6 +463,17 @@ DEBUG_FOR(LambdaExpression) {
     PUSH_LABEL("[body]")
     NESTED_DEBUG(body)
 
+    printer.decreaseTabLevel();
+}
+
+DEBUG_FOR(ObjectExpression) {
+    PUSH_LABEL("[object]")
+    printer.increaseTabLevel();
+    for (const auto &each : objectList) {
+        PUSH_LABEL("[pair]")
+        NESTED_DEBUG(std::get<0>(each))
+        NESTED_DEBUG(std::get<1>(each))
+    }
     printer.decreaseTabLevel();
 }
 

@@ -146,6 +146,7 @@ void Interpreter::executeFunctionDeclaration(const FunctionDeclarationStatement 
             break;                                  \
         }
 
+// TODO: Implement for loop to the negative side
 void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
     const auto start = executeExpression(forLoop->start);
     const auto end   = executeExpression(forLoop->end);
@@ -254,6 +255,8 @@ SharedValue Interpreter::executeExpression(const ExpressionPtr &expression) {
                 return executeVariableExpression       (EXPR_PTR(VariableExpression       ));
             case Lambda:
                 return executeLambdaExpression         (EXPR_PTR(LambdaExpression         ));
+            case Object:
+                return executeObjectExpression         (EXPR_PTR(ObjectExpression         ));
             case ExpressionError:
                 throw ErrorNodeException               ();
         }
@@ -296,19 +299,28 @@ SharedValue Interpreter::executeBinaryOperationExpression(const BinaryOperationE
     throw UnsupportedOperatorException(expression->op);
 }
 
-auto Interpreter::getPlacePointer(const IndexAccessExpression* indexExpression) {
-    const auto maybeIndex = executeExpression(indexExpression->index);
-    const auto floatingIndex = getCastedPointer<NumberType, NumberValue>(maybeIndex)->value;
-    if (!utils::isInteger(floatingIndex)) throw NonIntegerIndexException();
-    if (floatingIndex < 0) throw NegativeArrayIndexException();
-    const auto integerIndex = static_cast<long>(floatingIndex);
+SharedValue* Interpreter::getPlacePointer(const IndexAccessExpression* indexExpression) {
+    const auto target = executeExpression(indexExpression->target);
 
-    const auto maybeArray = executeExpression(indexExpression->target);
-    auto arrayObject = getCastedPointer<ArrayType, ArrayObject>(maybeArray);
-    if (integerIndex >= arrayObject->value.size()) throw IndexOutOfBoundsException(integerIndex);
+    if (target->dataType() == ArrayType) {
+        auto arrayObject = static_cast<ArrayObject*>(target.get());
+        const auto maybeIndex = executeExpression(indexExpression->index);
+        const auto floatingIndex = getCastedPointer<NumberType, NumberValue>(maybeIndex)->value;
+        if (!utils::isInteger(floatingIndex)) throw NonIntegerIndexException();
+        if (floatingIndex < 0) throw NegativeArrayIndexException();
+        const auto integerIndex = static_cast<long>(floatingIndex);
+        if (integerIndex >= arrayObject->value.size()) throw IndexOutOfBoundsException(integerIndex);
+        return &arrayObject->value[integerIndex];
+    }
 
-    const auto placePointer = arrayObject->value.begin() + integerIndex;
-    return placePointer;
+    if (target->dataType() == ObjectType) {
+        auto objectPtr = static_cast<UserObject*>(target.get());
+        const auto key = executeExpression(indexExpression->index)->toString();
+        const auto ptr = &objectPtr->value.at(key);
+        return ptr;
+    }
+
+    throw WrongIndexAccessTargetException(target->getTypename());
 }
 
 SharedValue Interpreter::executeRawAssignment(const ExpressionPtr &left, const ExpressionPtr &right) {
@@ -340,6 +352,7 @@ SharedValue Interpreter::executePrefixOperationExpression(const PrefixOperationE
     throw UnsupportedOperatorException(expression->op);
 }
 
+// TODO: Fix default arguments
 SharedValue Interpreter::executeCallExpression(const CallExpression *expression) {
     std::vector<SharedValue> arguments;
     for (const auto &each : expression->arguments) {
@@ -403,6 +416,16 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
     }
 
     return NilValue::getInstance();
+}
+
+SharedValue Interpreter::executeObjectExpression(const parser::AST::ObjectExpression *objExpr) {
+    std::map<std::string, SharedValue> objValue;
+    for (const auto& [keyExpr, valExpr] : objExpr->objectList) {
+        const auto key = executeExpression(keyExpr)->toString();
+        const auto value = executeExpression(valExpr);
+        objValue[key] = value;
+    }
+    return std::make_shared<UserObject>(objValue);
 }
 
 SharedValue Interpreter::executeIndexAccessExpression(const IndexAccessExpression *expression) {

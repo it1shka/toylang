@@ -15,6 +15,7 @@ const std::set<std::string> KEYWORDS {
     "nil",                          // for nil type
     "import", "as",                 // import system
     "echo",                         // special word for logging
+    "obj",                          // for creating objects
 };
 
 const std::set<std::string> OPERATORS {
@@ -29,7 +30,7 @@ const std::set<std::string> OPERATORS {
 };
 
 const std::set<char> PUNCTUATION {
-    '(', ')', '{', '}', ',', ';', '[', ']'
+    '(', ')', '{', '}', ',', ';', '[', ']', ':', '.'
 };
 
 // public methods

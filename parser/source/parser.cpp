@@ -288,6 +288,13 @@ ExpressionPtr Parser::readPostfixOperation() {
             expression = std::unique_ptr<IndexAccessExpression>(access);
             continue;
         }
+        if (nextIfValue(".")) {
+            auto ident = expectTypeToBe(Identifier);
+            ExpressionPtr strIndex = std::make_unique<StringLiteralExpression>(ident, startPosition);
+            const auto access = new IndexAccessExpression(expression, strIndex, startPosition);
+            expression = std::unique_ptr<IndexAccessExpression>(access);
+            continue;
+        }
         break;
     }
     return expression;
@@ -312,6 +319,9 @@ ExpressionPtr Parser::readAtomicExpression() noexcept {
         if (peekValueIs("lambda")) {
             return readLambdaExpression();
         }
+        if (peekValueIs("obj")) {
+            return readObjectExpression();
+        }
         if (peekValueIs("[")) {
             auto values = readExpressionList("[", "]");
             return std::make_unique<ArrayLiteralExpression>(values, startPosition);
@@ -332,6 +342,23 @@ ExpressionPtr Parser::readAtomicExpression() noexcept {
         }
         throw IllegalAtomicException(lexer.peek());
     END_CATCHING_BLOCK(IllegalExpression, "atomic expression")
+}
+
+ExpressionPtr Parser::readObjectExpression() noexcept {
+    CATCHING_BLOCK
+        expectValueToBe("obj");
+        expectValueToBe("{");
+        std::vector<std::tuple<ExpressionPtr, ExpressionPtr>> objectList;
+        while (!peekValueIs("}")) {
+            auto key = readExpression();
+            expectValueToBe(":");
+            auto value = readExpression();
+            objectList.emplace_back(std::move(key), std::move(value));
+            if (!nextIfValue(",")) break;
+        }
+        expectValueToBe("}");
+        return std::make_unique<ObjectExpression>(objectList, startPosition);
+    END_CATCHING_BLOCK(IllegalExpression, "object expression")
 }
 
 ExpressionPtr Parser::readLambdaExpression() noexcept {

@@ -1,6 +1,7 @@
 #include "prelude.h"
 #include "except.h"
 #include "types.h"
+#include "utils/utils.h"
 #include <memory>
 #include <tuple>
 #include <iostream>
@@ -238,7 +239,23 @@ const std::map<std::string, SharedValue>& interpreter::prelude::getPrelude() {
                 const auto number = getCastedPointer<NumberType, NumberValue>(args[0])->value;
                 const auto truncated = trunc(number);
                 return NUMBER(truncated);
-            })}
+            })},
+            {"keys", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(1)
+                const auto obj = getCastedPointer<ObjectType, UserObject>(args[0]);
+                auto keys = utils::mapKeys(obj->value);
+                std::vector<SharedValue> values(keys.size());
+                for (size_t i = 0; i < keys.size(); i++) {
+                    values[i] = STRING(keys[i]);
+                }
+                return ARRAY(values);
+            })},
+            {"values", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(1)
+                const auto obj = getCastedPointer<ObjectType, UserObject>(args[0]);
+                auto values = utils::mapValues(obj->value);
+                return ARRAY(values);
+            })},
             // TODO: complete the standard library
     };
     return preludeMap;

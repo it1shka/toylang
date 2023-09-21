@@ -1,4 +1,5 @@
 #include "types.h"
+#include "utils/utils.h"
 #include "except.h"
 #include <cmath>
 
@@ -17,8 +18,6 @@ SharedValue interpreter::types::copyForAssignment(const SharedValue &value) {
         );
 
     switch (value->dataType()) {
-        case ArrayType: case FunctionType: case BuiltinType:
-            return value;
         case NilType:
             return NilValue::getInstance();
         case BooleanType:
@@ -27,6 +26,8 @@ SharedValue interpreter::types::copyForAssignment(const SharedValue &value) {
             COPY_VALUE(NumberValue)
         case StringType:
             COPY_VALUE(StringValue)
+        default:
+            return value;
     }
 }
 
@@ -62,6 +63,19 @@ STRING_FOR(FunctionalObject) {
 
 STRING_FOR(BuiltinFunction) {
     return "built-in";
+}
+
+STRING_FOR(UserObject) {
+    auto output = std::string("obj {");
+    for (const auto& [key, val] : value) {
+        output += key;
+        output += ": ";
+        output += val->toString();
+        output += ", ";
+    }
+    output.erase(output.size() - 2);
+    output += "}";
+    return output;
 }
 
 // OPERATORS IMPLEMENTATION
@@ -120,16 +134,21 @@ ASSIGN_FOR(AnyValue, ^=) UNSUPPORTED_BIN_OP
         return SHARED_BOOL(VALUE);                    \
     }
 
+#define EQUAL_OBJS_BOOL(VALUE) \
+    if (this == other.get()) return SHARED_BOOL(VALUE);
+
 #define UNCHECKED_CASTED_OTHER(VALUE)    const auto castedOther = static_cast<VALUE*>(other.get());
 #define CHECKED_CASTED_OTHER(TYPE,VALUE) const auto castedOther = getCastedPointer<TYPE,VALUE>(other);
 
 #define DEFAULT_EQ(VALUE) {                          \
+    EQUAL_OBJS_BOOL(true)                            \
     NON_EQUAL_TYPES_BOOL(false)                      \
     UNCHECKED_CASTED_OTHER(VALUE)                    \
     return SHARED_BOOL(value == castedOther->value); \
 }
 
 #define DEFAULT_NEQ(VALUE) {                          \
+    EQUAL_OBJS_BOOL(false)                            \
     NON_EQUAL_TYPES_BOOL(true)                        \
     UNCHECKED_CASTED_OTHER(VALUE)                     \
     return SHARED_BOOL(value != castedOther->value);  \
@@ -287,6 +306,7 @@ ASSIGN_FOR(StringValue, *=) {
 
 // ArrayObject -- deep eq/neq, add, subtract, multiply
 BIN_OP_FOR(ArrayObject, ==) {
+    EQUAL_OBJS_BOOL(true)
     NON_EQUAL_TYPES_BOOL(false)
     UNCHECKED_CASTED_OTHER(ArrayObject)
     if (value.size() != castedOther->value.size()) {
@@ -304,6 +324,7 @@ BIN_OP_FOR(ArrayObject, ==) {
 }
 
 BIN_OP_FOR(ArrayObject, !=) {
+    EQUAL_OBJS_BOOL(false)
     NON_EQUAL_TYPES_BOOL(true)
     UNCHECKED_CASTED_OTHER(ArrayObject)
     if (value.size() != castedOther->value.size()) {
@@ -372,21 +393,63 @@ BIN_OP_FOR(ArrayObject, -) {
 
 // FunctionalObject -- pointer eq/neq
 BIN_OP_FOR(FunctionalObject, ==) {
-    NON_EQUAL_TYPES_BOOL(false)
-    return SHARED_BOOL(this == other.get());
+    EQUAL_OBJS_BOOL(true)
+    return SHARED_BOOL(false);
 }
 
 BIN_OP_FOR(FunctionalObject, !=) {
-    NON_EQUAL_TYPES_BOOL(true)
-    return SHARED_BOOL(this != other.get());
+    EQUAL_OBJS_BOOL(false)
+    return SHARED_BOOL(true);
 }
 
+// builtin function with C++ code
 BIN_OP_FOR(BuiltinFunction, ==) {
-    NON_EQUAL_TYPES_BOOL(false)
-    return SHARED_BOOL(this == other.get());
+    EQUAL_OBJS_BOOL(true)
+    return SHARED_BOOL(false);
 }
 
 BIN_OP_FOR(BuiltinFunction, !=) {
+    EQUAL_OBJS_BOOL(false)
+    return SHARED_BOOL(true);
+}
+
+// object
+BIN_OP_FOR(UserObject, ==) {
+    EQUAL_OBJS_BOOL(true)
+    NON_EQUAL_TYPES_BOOL(false)
+    UNCHECKED_CASTED_OTHER(UserObject)
+
+    const auto myKeys = utils::mapKeys(value);
+    const auto otherKeys = utils::mapKeys(castedOther->value);
+    if (!utils::compareVectors(myKeys, otherKeys)) {
+        return SHARED_BOOL(false);
+    }
+
+    for (const auto& each: myKeys) {
+        const auto result = *value.at(each) != castedOther->value.at(each);
+        const auto boolResult = static_cast<BooleanValue*>(result.get())->value;
+        if (boolResult) return SHARED_BOOL(false);
+    }
+
+    return SHARED_BOOL(true);
+}
+
+BIN_OP_FOR(UserObject, !=) {
+    EQUAL_OBJS_BOOL(false)
     NON_EQUAL_TYPES_BOOL(true)
-    return SHARED_BOOL(this != other.get());
+    UNCHECKED_CASTED_OTHER(UserObject)
+
+    const auto myKeys = utils::mapKeys(value);
+    const auto otherKeys = utils::mapKeys(castedOther->value);
+    if (!utils::compareVectors(myKeys, otherKeys)) {
+        return SHARED_BOOL(true);
+    }
+
+    for (const auto& each: myKeys) {
+        const auto result = *value.at(each) != castedOther->value.at(each);
+        const auto boolResult = static_cast<BooleanValue*>(result.get())->value;
+        if (boolResult) return SHARED_BOOL(true);
+    }
+
+    return SHARED_BOOL(false);
 }

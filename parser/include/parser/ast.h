@@ -87,6 +87,7 @@ namespace parser::AST {
             ArrayLiteral,
             Lambda,
             Variable,
+            Object,
             ExpressionError
         };
         explicit Expression(Position &position)
@@ -402,6 +403,18 @@ namespace parser::AST {
             StatementPtr &body,
             Position &position
         ) : parameters(std::move(parameters)), body(std::move(body)), Expression(position) {}
+        ENABLE_PRINTING
+    };
+
+    struct ObjectExpression final : Expression {
+        NODE_NAME("object")
+        EXPRESSION_TYPE(Object)
+        using ObjectList = std::vector<std::tuple<ExpressionPtr, ExpressionPtr>>;
+        const ObjectList objectList;
+        ObjectExpression (
+            ObjectList &list,
+            Position &position
+        ) : objectList(std::move(list)), Expression(position) {}
         ENABLE_PRINTING
     };
 
