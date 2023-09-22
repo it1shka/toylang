@@ -38,4 +38,15 @@ namespace utils {
         }
         return true;
     }
+
+    template<typename Iterable>
+    std::string stringJoin(const Iterable& iterable, const std::string& delim) {
+        std::string output;
+        for (const auto& each : iterable) {
+            output += each;
+            output += delim;
+        }
+        output.erase(output.size() - delim.size(), delim.size());
+        return output;
+    }
 }

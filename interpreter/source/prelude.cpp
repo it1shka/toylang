@@ -142,20 +142,28 @@ const std::map<std::string, SharedValue>& interpreter::prelude::getPrelude() {
                 }
                 return minimal;
             })},
-            // TODO: Handle edge cases and negative numbers
-//            {"range", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
-//                ARGS_SIZE(3)
-//                const auto start = getCastedPointer<NumberType, NumberValue>(args[0])->value;
-//                const auto end = getCastedPointer<NumberType, NumberValue>(args[1])->value;
-//                const auto step = getCastedPointer<NumberType, NumberValue>(args[2])->value;
-//                if (start < end && step <= 0) return NIL;
-//                if (start > end && step >= 0) return NIL;
-//                std::vector<SharedValue> rangeVector;
-//                for (long double i = start; i < end; i += step) {
-//                    rangeVector.push_back(NUMBER(i));
-//                }
-//                return ARRAY(rangeVector);
-//            })},
+            {"range", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(3)
+
+                const auto start = getCastedPointer<NumberType, NumberValue>(args[0])->value;
+                const auto end   = getCastedPointer<NumberType, NumberValue>(args[1])->value;
+                const auto step  = getCastedPointer<NumberType, NumberValue>(args[2])->value;
+
+                if (step == 0) return NIL;
+                if (start < end && step < 0) return NIL;
+                if (start > end && step > 0) return NIL;
+
+                std::vector<SharedValue> rangeVector;
+                long double counter = start;
+                while (true) {
+                    if      (counter >= end && step > 0) break;
+                    else if (counter <= end && step < 0) break;
+                    rangeVector.push_back(NUMBER(counter));
+                    counter += step;
+                }
+
+                return ARRAY(rangeVector);
+            })},
             {"typeof", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
                 ARGS_SIZE(1)
                 return STRING(args[0]->getTypename());

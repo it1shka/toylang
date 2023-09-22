@@ -145,4 +145,38 @@ namespace interpreter::exceptions {
             : message("Misplaced flow operator: " + opName) {}
         ENABLE_WHAT
     };
+
+    class ZeroStepException : public RuntimeException {
+        WHAT_DECLARATION {
+            return "For loop step cannot be zero";
+        }
+    };
+
+    class NegativeStepException : public RuntimeException {
+        WHAT_DECLARATION {
+            return "Step should be positive";
+        }
+    };
+
+    class PositiveStepException : public RuntimeException {
+        WHAT_DECLARATION {
+            return "Step should be negative";
+        }
+    };
+
+    class DuplicateParameterException : public RuntimeException {
+        const std::string message;
+    public:
+        explicit DuplicateParameterException(const std::string& param)
+            : message("Parameter '" + param + "' has been already declared") {}
+        ENABLE_WHAT
+    };
+
+    class UnsetParametersException : public RuntimeException {
+        const std::string message;
+    public:
+        explicit UnsetParametersException(const std::string& paramList)
+            : message("Some parameters are left unset: " + paramList) {}
+        ENABLE_WHAT
+    };
 }

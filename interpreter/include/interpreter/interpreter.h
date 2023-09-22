@@ -33,7 +33,7 @@ namespace interpreter {
         void executeBlock(const BlockStatement* block);
         void executeEcho(const EchoStatement* echo);
         void executeBareExpression(const ExpressionStatement* bare);
-        SharedValue* getPlacePointer(const IndexAccessExpression* indexExpression);
+        SharedValue* getPlacePointer(const IndexAccessExpression* indexExpression, bool read);
         // Expressions:
         SharedValue executeExpression(const ExpressionPtr &expression);
         SharedValue executeBinaryOperationExpression(const BinaryOperationExpression* expression);

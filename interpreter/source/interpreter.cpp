@@ -3,6 +3,7 @@
 #include "except.h"
 #include "utils/utils.h"
 #include "prelude.h"
+#include <set>
 
 using namespace parser::AST;
 using namespace interpreter;
@@ -146,7 +147,6 @@ void Interpreter::executeFunctionDeclaration(const FunctionDeclarationStatement 
             break;                                  \
         }
 
-// TODO: Implement for loop to the negative side
 void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
     const auto start = executeExpression(forLoop->start);
     const auto end   = executeExpression(forLoop->end);
@@ -154,12 +154,28 @@ void Interpreter::executeForLoop(const ForLoopStatement *forLoop) {
             ? executeExpression(*forLoop->step)
             : std::make_shared<NumberValue>(1);
 
+    const auto startValue = getCastedPointer<NumberType, NumberValue>(start)->value;
+    const auto endValue = getCastedPointer<NumberType, NumberValue>(end)->value;
+    const auto stepValue = getCastedPointer<NumberType, NumberValue>(step)->value;
+
+    if (stepValue == 0) {
+        throw ZeroStepException();
+    }
+
+    if (startValue < endValue && stepValue < 0) {
+        throw NegativeStepException();
+    }
+
+    if (startValue > endValue && stepValue > 0) {
+        throw PositiveStepException();
+    }
+
     enterScope();
     scope->initVariable(forLoop->variable, start);
 
     while (true) {
         const auto counter = scope->getValue(forLoop->variable);
-        const auto result = *counter >= end;
+        const auto result = stepValue > 0 ? *counter >= end : *counter <= end;
         const auto booleanResult = static_cast<BooleanValue*>(result.get());
         if (booleanResult->value) break;
         executeStatement(forLoop->body);
@@ -299,7 +315,7 @@ SharedValue Interpreter::executeBinaryOperationExpression(const BinaryOperationE
     throw UnsupportedOperatorException(expression->op);
 }
 
-SharedValue* Interpreter::getPlacePointer(const IndexAccessExpression* indexExpression) {
+SharedValue* Interpreter::getPlacePointer(const IndexAccessExpression* indexExpression, bool read) {
     const auto target = executeExpression(indexExpression->target);
 
     if (target->dataType() == ArrayType) {
@@ -316,8 +332,10 @@ SharedValue* Interpreter::getPlacePointer(const IndexAccessExpression* indexExpr
     if (target->dataType() == ObjectType) {
         auto objectPtr = static_cast<UserObject*>(target.get());
         const auto key = executeExpression(indexExpression->index)->toString();
-        const auto ptr = &objectPtr->value.at(key);
-        return ptr;
+        if ((objectPtr->value.find(key) == objectPtr->value.end()) && read) {
+            return nullptr;
+        }
+        return &objectPtr->value[key];
     }
 
     throw WrongIndexAccessTargetException(target->getTypename());
@@ -332,7 +350,7 @@ SharedValue Interpreter::executeRawAssignment(const ExpressionPtr &left, const E
         scope->setValue(varExpression->name, copy);
     } else if (left->expressionType() == IndexAccess) {
         const auto indexExpression = static_cast<IndexAccessExpression*>(left.get());
-        const auto placePointer = getPlacePointer(indexExpression);
+        const auto placePointer = getPlacePointer(indexExpression, false);
         *placePointer = copy;
     } else {
         throw ExpectedIdentifierException();
@@ -372,30 +390,55 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
     scope = fnPtr->scope;
     enterScope();
 
-    std::vector<std::string> unboundNames;
+    std::vector<std::string> parameterNames;
+    std::set<std::string> withoutDefault;
+    #define CHECK_FOR_DUPLICATE \
+        if (std::find(parameterNames.begin(), parameterNames.end(), variablePointer->name) != parameterNames.end()) { \
+            throw DuplicateParameterException(variablePointer->name); \
+        }
+
     for (const auto &param : fnPtr->parameters) {
         if (param->expressionType() == Variable) {
-            unboundNames.push_back(static_cast<VariableExpression*>(param.get())->name);
+            const auto variablePointer = static_cast<VariableExpression*>(param.get());
+            CHECK_FOR_DUPLICATE
+            parameterNames.push_back(variablePointer->name);
+            withoutDefault.insert(variablePointer->name);
             continue;
         }
+
         if (param->expressionType() == BinaryOperation) {
             const auto binOp = static_cast<BinaryOperationExpression*>(param.get());
-            if (binOp->op != "=") throw FunctionParameterWrongFormatException();
-            if (binOp->left->expressionType() == Variable) {
-                scope->initVariable(static_cast<VariableExpression*>(binOp->left.get())->name);
+            if ((binOp->op != "=") || (binOp->left->expressionType() != Variable)) {
+                throw FunctionParameterWrongFormatException();
             }
-            executeRawAssignment(binOp->left, binOp->right);
+            const auto variablePointer = static_cast<VariableExpression*>(binOp->left.get());
+            CHECK_FOR_DUPLICATE
+            parameterNames.push_back(variablePointer->name);
+            const auto defaultValue = executeExpression(binOp->right);
+            const auto copiedDefaultValue = copyForAssignment(defaultValue);
+            scope->initVariable(variablePointer->name, copiedDefaultValue);
             continue;
         }
+
         throw FunctionParameterWrongFormatException();
     }
 
-    if (unboundNames.size() != arguments.size()) {
-        throw ParamsAndArgsDontMatchException(unboundNames.size(), expression->arguments.size());
+    if (arguments.size() > parameterNames.size()) {
+        throw ParamsAndArgsDontMatchException(parameterNames.size(), arguments.size());
     }
 
-    for (size_t i = 0; i < unboundNames.size(); i++) {
-        scope->initVariable(unboundNames[i], arguments[i]);
+    for (size_t i = 0; i < arguments.size(); i++) {
+        if (const auto it = withoutDefault.find(parameterNames[i]); it != withoutDefault.end()) {
+            scope->initVariable(parameterNames[i], arguments[i]);
+            withoutDefault.erase(it);
+        } else {
+            scope->setValue(parameterNames[i], arguments[i]);
+        }
+    }
+
+    if (!withoutDefault.empty()) {
+         const auto paramList = utils::stringJoin(withoutDefault, ", ");
+        throw UnsetParametersException(paramList);
     }
 
     executeStatement(fnPtr->body);
@@ -429,7 +472,8 @@ SharedValue Interpreter::executeObjectExpression(const parser::AST::ObjectExpres
 }
 
 SharedValue Interpreter::executeIndexAccessExpression(const IndexAccessExpression *expression) {
-    const auto placePointer = getPlacePointer(expression);
+    const auto placePointer = getPlacePointer(expression, true);
+    if (placePointer == nullptr) return NilValue::getInstance();
     return *placePointer;
 }
 
