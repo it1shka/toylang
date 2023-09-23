@@ -1,11 +1,16 @@
 1. Cover code with tests
-2. Imlement objects and member "dot" operator
 3. Code analyzer
 4. better import statements
 
-FUCKING FUNCTIONS NOT WORKING RECURSIVELY FUCK FUCK I HATE
-I HATE IT FUCK KILL ME PLS
+Make an import system implemented
+right in the interpreter.
 
-CHANGE VECTOR OF RETURN VALUES BACK!!!
+Since functions are lazy evaluated and
+they contain references to AST,
+I need to keep all the imported ASTs inside of
+an importing interpreter.
 
-let f = lambda(a) { if (a < 2) return a; return f(a - 2) + f(a - 1); };
+Also, I need to support showing
+in which file the error was thrown, so
+the user knows where is this function defined
+(the function that threw an error)

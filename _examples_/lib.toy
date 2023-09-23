@@ -1,0 +1,14 @@
+import pref as prefix;
+
+fun Cat(name) {
+    return obj {
+        "meow": lambda() {
+            echo prefix("Cat", name) + " said meow!";
+        },
+        "eat": lambda(food) {
+            echo prefix("Cat", name) + " ate " + food;
+        },
+    };
+}
+
+exports = Cat;

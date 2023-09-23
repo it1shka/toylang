@@ -18,10 +18,12 @@ namespace interpreter {
         FlowFlag flowRegister;
         std::optional<SharedValue> returnRegister;
         std::optional<std::string> fatalError;
+        std::vector<ProgramPtr> importedASTs;
         void enterScope();
         void leaveScope();
         // Statements:
         void executeStatement(const StatementPtr &statement);
+        void executeLibraryImport(const ImportLibraryStatement* import);
         void executeVariableDeclaration(const VariableDeclarationStatement* declaration);
         void executeFunctionDeclaration(const FunctionDeclarationStatement* function);
         void executeForLoop(const ForLoopStatement* forLoop);
@@ -53,5 +55,7 @@ namespace interpreter {
         void executeProgram(Program &program);
         [[nodiscard]] bool didFailed() const;
         [[nodiscard]] const std::optional<std::string>& getFatalError() const;
+        [[nodiscard]] std::vector<ProgramPtr>& getImportedASTs();
+        [[nodiscard]] const SharedScope& getScope() const;
     };
 }

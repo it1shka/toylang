@@ -173,7 +173,7 @@ namespace interpreter::types {
 
     struct UserObject final : AnyValue {
         std::map<std::string, SharedValue> value;
-        explicit UserObject(std::map<std::string, SharedValue> &value)
+        explicit UserObject(std::map<std::string, SharedValue> value = {})
             : value(std::move(value)) {}
 
         DATA_TYPE(ObjectType)

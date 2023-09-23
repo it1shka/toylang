@@ -1,5 +1,0 @@
-fun add(a, b = 2, c = 3, c, b, a) {
-    return a + b + c;
-}
-
-echo add(1, 2, 3, 4);

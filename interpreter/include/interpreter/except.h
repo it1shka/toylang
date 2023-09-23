@@ -179,4 +179,28 @@ namespace interpreter::exceptions {
             : message("Some parameters are left unset: " + paramList) {}
         ENABLE_WHAT
     };
+
+    class FileImportFailedException : public RuntimeException {
+        const std::string message;
+    public:
+        explicit FileImportFailedException(const std::string& libName)
+            : message("Failed to open library \"" + libName + "\"") {}
+        ENABLE_WHAT
+    };
+
+    class ImportParserException : public RuntimeException {
+        const std::string message;
+    public:
+        ImportParserException(const std::string& libName, const std::string& errors)
+            : message("Parser errors in imported lib \"" + libName + "\" were found: \n" + errors) {}
+        ENABLE_WHAT
+    };
+
+    class ImportEvalException : public RuntimeException {
+        const std::string message;
+    public:
+        ImportEvalException(const std::string& libName, const std::string& error)
+                : message("Evaluation error in imported lib \"" + libName + "\" were found: \n" + error) {}
+        ENABLE_WHAT
+    };
 }

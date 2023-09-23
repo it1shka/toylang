@@ -3,6 +3,8 @@
 #include "except.h"
 #include "utils/utils.h"
 #include "prelude.h"
+#include "parser/parser.h"
+#include <fstream>
 #include <set>
 
 using namespace parser::AST;
@@ -13,7 +15,8 @@ using namespace interpreter::types;
 Interpreter::Interpreter(const Storage &initialStorage)
     : flowRegister(FlowFlag::SequentialFlow),
       returnRegister(std::nullopt),
-      fatalError(std::nullopt) {
+      fatalError(std::nullopt),
+      importedASTs() {
     scope = LexicalScope::create();
     for (const auto &[key, value] : prelude::getPrelude()) {
         scope->initVariable(key, value);
@@ -21,6 +24,14 @@ Interpreter::Interpreter(const Storage &initialStorage)
     for (const auto &[key, value] : initialStorage) {
         scope->initVariable(key, value);
     }
+}
+
+std::vector<ProgramPtr>& Interpreter::getImportedASTs() {
+    return importedASTs;
+}
+
+const SharedScope& Interpreter::getScope() const {
+    return scope;
 }
 
 std::string Interpreter::flowFlagToString(FlowFlag flag) {
@@ -85,7 +96,7 @@ void Interpreter::executeStatement(const StatementPtr &statement) {
         using enum Statement::StatementType;
         switch(statement->statementType()) {
             case LibraryImport:
-                throw UnimplementedException("import");
+                return executeLibraryImport      (STMT_PTR(ImportLibraryStatement       ));
             case VariableDeclaration:
                 return executeVariableDeclaration(STMT_PTR(VariableDeclarationStatement ));
             case FunctionDeclaration:
@@ -115,6 +126,40 @@ void Interpreter::executeStatement(const StatementPtr &statement) {
 }
 
 // STATEMENTS
+
+void Interpreter::executeLibraryImport(const parser::AST::ImportLibraryStatement *import) {
+    const auto localName = import->libName + ".toy";
+    std::ifstream filestream(localName);
+    if (filestream.bad() || !filestream.is_open()) {
+        throw FileImportFailedException(localName);
+    }
+
+    auto _parser = parser::Parser(filestream);
+    auto programAST = _parser.readProgram();
+    if (!_parser.getErrors().empty()) {
+        const auto& errors = _parser.getErrors();
+        const auto errorString = utils::stringJoin(errors, ", ");
+        throw ImportParserException(localName, errorString);
+    }
+
+    auto _engine = interpreter::Interpreter();
+    _engine.executeProgram(*programAST);
+    if (_engine.getFatalError().has_value()) {
+        throw ImportEvalException(localName, _engine.getFatalError().value());
+    }
+
+    importedASTs.push_back(std::move(programAST));
+    for (auto& each : _engine.getImportedASTs()) {
+        importedASTs.push_back(std::move(each));
+    }
+
+    const auto exportObject = _engine.getScope()->getValue("exports");
+    if (import->alias.has_value()) {
+        scope->initVariable(import->alias.value(), exportObject);
+    } else {
+        scope->initVariable(import->libName, exportObject);
+    }
+}
 
 void Interpreter::executeVariableDeclaration(const VariableDeclarationStatement *declaration) {
     if (declaration->value) {

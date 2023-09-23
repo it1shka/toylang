@@ -13,6 +13,7 @@
 #define BOOL(VALUE)   std::make_shared<BooleanValue>(VALUE)
 #define ARRAY(VALUE)  std::make_shared<ArrayObject>(VALUE)
 #define STRING(VALUE) std::make_shared<StringValue>(VALUE)
+#define OBJECT(VALUE) std::make_shared<UserObject>(VALUE)
 #define NIL           NilValue::getInstance()
 #define ARGS_SIZE(VALUE)    \
     if (args.size() != VALUE)   \
@@ -264,6 +265,7 @@ const std::map<std::string, SharedValue>& interpreter::prelude::getPrelude() {
                 auto values = utils::mapValues(obj->value);
                 return ARRAY(values);
             })},
+            {"exports", OBJECT()}
             // TODO: complete the standard library
     };
     return preludeMap;

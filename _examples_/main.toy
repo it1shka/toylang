@@ -1,0 +1,5 @@
+import lib as Cat;
+
+let cat = Cat("Tosha");
+cat.meow();
+cat.eat("fish");
