@@ -1,3 +1,0 @@
-exports = lambda (prefix, name) {
-    return prefix + " " + name;
-};

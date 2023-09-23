@@ -1,4 +1,3 @@
-#include <iostream>
 #include "interpreter.h"
 #include "except.h"
 #include "utils/utils.h"
@@ -6,14 +5,16 @@
 #include "parser/parser.h"
 #include <fstream>
 #include <set>
+#include <utility>
 
 using namespace parser::AST;
 using namespace interpreter;
 using namespace interpreter::exceptions;
 using namespace interpreter::types;
 
-Interpreter::Interpreter(const Storage &initialStorage)
-    : flowRegister(FlowFlag::SequentialFlow),
+Interpreter::Interpreter(std::string filename, const Storage& initialStorage)
+    : filename(std::move(filename)),
+      flowRegister(FlowFlag::SequentialFlow),
       returnRegister(std::nullopt),
       fatalError(std::nullopt),
       importedASTs() {
@@ -138,11 +139,11 @@ void Interpreter::executeLibraryImport(const parser::AST::ImportLibraryStatement
     auto programAST = _parser.readProgram();
     if (!_parser.getErrors().empty()) {
         const auto& errors = _parser.getErrors();
-        const auto errorString = utils::stringJoin(errors, ", ");
+        const auto errorString = utils::stringJoin(errors, "\n");
         throw ImportParserException(localName, errorString);
     }
 
-    auto _engine = interpreter::Interpreter();
+    auto _engine = interpreter::Interpreter(localName);
     _engine.executeProgram(*programAST);
     if (_engine.getFatalError().has_value()) {
         throw ImportEvalException(localName, _engine.getFatalError().value());
@@ -174,6 +175,7 @@ void Interpreter::executeVariableDeclaration(const VariableDeclarationStatement 
 void Interpreter::executeFunctionDeclaration(const FunctionDeclarationStatement *fnNode) {
     const auto fnObj =
         std::make_shared<FunctionalObject> (
+            filename,
             fnNode->parameters,
             fnNode->body,
             scope
@@ -415,8 +417,8 @@ SharedValue Interpreter::executePrefixOperationExpression(const PrefixOperationE
     throw UnsupportedOperatorException(expression->op);
 }
 
-// TODO: Fix default arguments
 SharedValue Interpreter::executeCallExpression(const CallExpression *expression) {
+
     std::vector<SharedValue> arguments;
     for (const auto &each : expression->arguments) {
         const auto value = executeExpression(each);
@@ -431,79 +433,92 @@ SharedValue Interpreter::executeCallExpression(const CallExpression *expression)
     }
 
     const auto fnPtr = getCastedPointer<FunctionType, FunctionalObject>(maybeTarget);
-    const auto callingScope = scope;
-    scope = fnPtr->scope;
-    enterScope();
 
-    std::vector<std::string> parameterNames;
-    std::set<std::string> withoutDefault;
-    #define CHECK_FOR_DUPLICATE \
+    try {
+        const auto callingScope = scope;
+        scope = fnPtr->scope;
+        enterScope();
+
+        std::vector<std::string> parameterNames;
+        std::set<std::string> withoutDefault;
+#define CHECK_FOR_DUPLICATE \
         if (std::find(parameterNames.begin(), parameterNames.end(), variablePointer->name) != parameterNames.end()) { \
             throw DuplicateParameterException(variablePointer->name); \
         }
 
-    for (const auto &param : fnPtr->parameters) {
-        if (param->expressionType() == Variable) {
-            const auto variablePointer = static_cast<VariableExpression*>(param.get());
-            CHECK_FOR_DUPLICATE
-            parameterNames.push_back(variablePointer->name);
-            withoutDefault.insert(variablePointer->name);
-            continue;
-        }
-
-        if (param->expressionType() == BinaryOperation) {
-            const auto binOp = static_cast<BinaryOperationExpression*>(param.get());
-            if ((binOp->op != "=") || (binOp->left->expressionType() != Variable)) {
-                throw FunctionParameterWrongFormatException();
+        for (const auto &param : fnPtr->parameters) {
+            if (param->expressionType() == Variable) {
+                const auto variablePointer = static_cast<VariableExpression*>(param.get());
+                CHECK_FOR_DUPLICATE
+                parameterNames.push_back(variablePointer->name);
+                withoutDefault.insert(variablePointer->name);
+                continue;
             }
-            const auto variablePointer = static_cast<VariableExpression*>(binOp->left.get());
-            CHECK_FOR_DUPLICATE
-            parameterNames.push_back(variablePointer->name);
-            const auto defaultValue = executeExpression(binOp->right);
-            const auto copiedDefaultValue = copyForAssignment(defaultValue);
-            scope->initVariable(variablePointer->name, copiedDefaultValue);
-            continue;
+
+            if (param->expressionType() == BinaryOperation) {
+                const auto binOp = static_cast<BinaryOperationExpression*>(param.get());
+                if ((binOp->op != "=") || (binOp->left->expressionType() != Variable)) {
+                    throw FunctionParameterWrongFormatException();
+                }
+                const auto variablePointer = static_cast<VariableExpression*>(binOp->left.get());
+                CHECK_FOR_DUPLICATE
+                parameterNames.push_back(variablePointer->name);
+                const auto defaultValue = executeExpression(binOp->right);
+                const auto copiedDefaultValue = copyForAssignment(defaultValue);
+                scope->initVariable(variablePointer->name, copiedDefaultValue);
+                continue;
+            }
+
+            throw FunctionParameterWrongFormatException();
         }
 
-        throw FunctionParameterWrongFormatException();
-    }
-
-    if (arguments.size() > parameterNames.size()) {
-        throw ParamsAndArgsDontMatchException(parameterNames.size(), arguments.size());
-    }
-
-    for (size_t i = 0; i < arguments.size(); i++) {
-        if (const auto it = withoutDefault.find(parameterNames[i]); it != withoutDefault.end()) {
-            scope->initVariable(parameterNames[i], arguments[i]);
-            withoutDefault.erase(it);
-        } else {
-            scope->setValue(parameterNames[i], arguments[i]);
+        if (arguments.size() > parameterNames.size()) {
+            throw ParamsAndArgsDontMatchException(parameterNames.size(), arguments.size());
         }
+
+        for (size_t i = 0; i < arguments.size(); i++) {
+            if (const auto it = withoutDefault.find(parameterNames[i]); it != withoutDefault.end()) {
+                scope->initVariable(parameterNames[i], arguments[i]);
+                withoutDefault.erase(it);
+            } else {
+                scope->setValue(parameterNames[i], arguments[i]);
+            }
+        }
+
+        if (!withoutDefault.empty()) {
+            const auto paramList = utils::stringJoin(withoutDefault, ", ");
+            throw UnsetParametersException(paramList);
+        }
+
+        executeStatement(fnPtr->body);
+
+        leaveScope();
+        scope = callingScope;
+
+        if (flowRegister != FlowFlag::ReturnValue && flowRegister != FlowFlag::SequentialFlow) {
+            const auto opName = flowFlagToString(flowRegister);
+            throw MisplacedFlowOperator(opName);
+        }
+
+        flowRegister = FlowFlag::SequentialFlow;
+        if (returnRegister.has_value()) {
+            auto value = *returnRegister;
+            returnRegister = std::nullopt;
+            return value;
+        }
+
+        return NilValue::getInstance();
+    } catch (...) {
+        const auto currentExpression = std::current_exception();
+        std::string description = "unknown runtime exception";
+        try {
+            std::rethrow_exception(currentExpression);
+        } catch (const RuntimeException &exception) {
+            description = std::string(exception.what());
+        }
+        const auto label = "calling a function from file \"" + fnPtr->filename + "\"";
+        throw PropagatedException(label, description);
     }
-
-    if (!withoutDefault.empty()) {
-         const auto paramList = utils::stringJoin(withoutDefault, ", ");
-        throw UnsetParametersException(paramList);
-    }
-
-    executeStatement(fnPtr->body);
-
-    leaveScope();
-    scope = callingScope;
-
-    if (flowRegister != FlowFlag::ReturnValue && flowRegister != FlowFlag::SequentialFlow) {
-        const auto opName = flowFlagToString(flowRegister);
-        throw MisplacedFlowOperator(opName);
-    }
-
-    flowRegister = FlowFlag::SequentialFlow;
-    if (returnRegister.has_value()) {
-        auto value = *returnRegister;
-        returnRegister = std::nullopt;
-        return value;
-    }
-
-    return NilValue::getInstance();
 }
 
 SharedValue Interpreter::executeObjectExpression(const parser::AST::ObjectExpression *objExpr) {
@@ -549,6 +564,7 @@ SharedValue Interpreter::executeVariableExpression(const VariableExpression *exp
 
 SharedValue Interpreter::executeLambdaExpression(const LambdaExpression *expression) {
     return std::make_shared<FunctionalObject> (
+        filename,
         expression->parameters,
         expression->body,
         scope

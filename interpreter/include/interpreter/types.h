@@ -155,14 +155,16 @@ namespace interpreter::types {
     };
 
     struct FunctionalObject final : AnyValue {
+        const std::string filename;
         const std::vector<ExpressionPtr> &parameters;
         const StatementPtr &body;
         std::shared_ptr<LexicalScope> scope;
         FunctionalObject (
+            std::string filename,
             const std::vector<ExpressionPtr> &parameters,
             const StatementPtr &body,
             std::shared_ptr<LexicalScope> &scope
-        ) : parameters(parameters), body(body), scope(scope) {}
+        ) : filename(std::move(filename)), parameters(parameters), body(body), scope(scope) {}
 
         DATA_TYPE(FunctionType)
         TYPENAME("function")

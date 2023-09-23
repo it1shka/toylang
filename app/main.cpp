@@ -41,7 +41,7 @@ public:
     }
 };
 
-auto executeCode(std::istream& stream) -> void {
+auto executeCode(const std::string& filename, std::istream& stream) -> void {
     parser::Parser _parser(stream);
     const auto ast = _parser.readProgram();
     if (!_parser.getErrors().empty()) {
@@ -51,7 +51,7 @@ auto executeCode(std::istream& stream) -> void {
         }
         return;
     }
-    interpreter::Interpreter _interpreter;
+    interpreter::Interpreter _interpreter(filename);
     _interpreter.executeProgram(*ast);
     const auto maybeError = _interpreter.getFatalError();
     if (maybeError.has_value()) {
@@ -68,7 +68,7 @@ auto runConsole() -> void {
         if (buffer == "EXIT") return;
         if (buffer == "EXEC") {
             std::istringstream stream(code);
-            executeCode(stream);
+            executeCode("CONSOLE", stream);
             code.clear();
             continue;
         }
@@ -82,7 +82,7 @@ auto runFile(const std::string& filename) -> void {
         std::cerr << "Error while opening file \"" << filename << "\". Maybe file does not exist" << std::endl;
         return;
     }
-    executeCode(filestream);
+    executeCode(filename, filestream);
 }
 
 auto formatFile(const std::string& filename) -> void {

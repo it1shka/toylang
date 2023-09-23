@@ -200,7 +200,7 @@ namespace interpreter::exceptions {
         const std::string message;
     public:
         ImportEvalException(const std::string& libName, const std::string& error)
-                : message("Evaluation error in imported lib \"" + libName + "\" were found: \n" + error) {}
+                : message("Evaluation error in imported lib \"" + libName + "\" was found: \n" + error) {}
         ENABLE_WHAT
     };
 }

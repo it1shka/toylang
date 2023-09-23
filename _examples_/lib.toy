@@ -1,14 +1,5 @@
-import pref as prefix;
+import lib2 as lib;
 
-fun Cat(name) {
-    return obj {
-        "meow": lambda() {
-            echo prefix("Cat", name) + " said meow!";
-        },
-        "eat": lambda(food) {
-            echo prefix("Cat", name) + " ate " + food;
-        },
-    };
-}
-
-exports = Cat;
+exports.B = lambda(a, b, c) {
+    return lib.A(a);
+};

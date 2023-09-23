@@ -14,6 +14,7 @@ namespace interpreter {
             ReturnValue
         };
         static std::string flowFlagToString(FlowFlag flag);
+        const std::string filename;
         SharedScope scope;
         FlowFlag flowRegister;
         std::optional<SharedValue> returnRegister;
@@ -51,7 +52,7 @@ namespace interpreter {
         SharedValue executeLambdaExpression(const LambdaExpression* expression);
         SharedValue executeObjectExpression(const ObjectExpression* objExpr);
     public:
-        explicit Interpreter(const Storage &initialStorage = {});
+        explicit Interpreter(std::string filename, const Storage& initialStorage = {});
         void executeProgram(Program &program);
         [[nodiscard]] bool didFailed() const;
         [[nodiscard]] const std::optional<std::string>& getFatalError() const;

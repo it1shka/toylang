@@ -8,6 +8,9 @@
 #include <fstream>
 #include <sstream>
 #include <ios>
+#include <chrono>
+#include <thread>
+#include <cstdlib>
 
 #define NUMBER(VALUE) std::make_shared<NumberValue>(VALUE)
 #define BOOL(VALUE)   std::make_shared<BooleanValue>(VALUE)
@@ -264,6 +267,22 @@ const std::map<std::string, SharedValue>& interpreter::prelude::getPrelude() {
                 const auto obj = getCastedPointer<ObjectType, UserObject>(args[0]);
                 auto values = utils::mapValues(obj->value);
                 return ARRAY(values);
+            })},
+            {"wait", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(1)
+                const auto numberPtr = getCastedPointer<NumberType, NumberValue>(args[0]);
+                const auto numberValue = static_cast<long long>(numberPtr->value);
+                const auto duration = std::chrono::milliseconds(numberValue);
+                std::this_thread::sleep_for(duration);
+                return NIL;
+            })},
+            {"cls", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                #ifdef WINDOWS
+                    std::system("cls");
+                #else
+                    std::system("clear");
+                #endif
+                return NIL;
             })},
             {"exports", OBJECT()}
             // TODO: complete the standard library

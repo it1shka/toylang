@@ -1,5 +1,3 @@
-import lib as Cat;
+import lib;
 
-let cat = Cat("Tosha");
-cat.meow();
-cat.eat("fish");
+echo lib.B(1, 2, 3);
