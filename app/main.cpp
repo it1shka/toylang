@@ -25,6 +25,7 @@ public:
         }
     }
     auto readIf(const std::string& value) -> bool {
+        if (arguments.empty()) return false;
         if (arguments.front() == value) {
             arguments.pop();
             return true;

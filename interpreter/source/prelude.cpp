@@ -36,6 +36,17 @@ const std::map<std::string, SharedValue>& interpreter::prelude::getPrelude() {
                 const auto arrayPtr = getCastedPointer<ArrayType, ArrayObject>(args[0]);
                 return NUMBER(arrayPtr->value.size());
             })},
+            {"chars", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(1)
+                const auto strPtr = getCastedPointer<StringType, StringValue>(args[0]);
+                std::vector<SharedValue> chars;
+                for (auto each : strPtr->value) {
+                    std::string str;
+                    str += each;
+                    chars.push_back(STRING(str));
+                }
+                return ARRAY(chars);
+            })},
             {"abs", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
                 ARGS_SIZE(1)
                 const auto numberPtr = getCastedPointer<NumberType, NumberValue>(args[0]);
@@ -64,6 +75,7 @@ const std::map<std::string, SharedValue>& interpreter::prelude::getPrelude() {
                 for (const auto& each : args) {
                     std::cout << each->toString();
                 }
+                std::cout.flush();
                 return NIL;
             })},
             {"println", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
