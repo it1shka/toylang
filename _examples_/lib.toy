@@ -1,5 +1,0 @@
-import lib2 as lib;
-
-exports.B = lambda(a, b, c) {
-    return lib.A(a);
-};

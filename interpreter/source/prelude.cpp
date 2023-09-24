@@ -11,6 +11,7 @@
 #include <chrono>
 #include <thread>
 #include <cstdlib>
+#include <random>
 
 #define NUMBER(VALUE) std::make_shared<NumberValue>(VALUE)
 #define BOOL(VALUE)   std::make_shared<BooleanValue>(VALUE)
@@ -29,6 +30,7 @@ const std::map<std::string, SharedValue>& interpreter::prelude::getPrelude() {
     const static std::map<std::string, SharedValue>& preludeMap {
             {"PI", NUMBER(3.14159265)},
             {"EXP", NUMBER(2.718)},
+            {"exports", OBJECT()},
             {"size", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
                 ARGS_SIZE(1)
                 const auto arrayPtr = getCastedPointer<ArrayType, ArrayObject>(args[0]);
@@ -284,7 +286,28 @@ const std::map<std::string, SharedValue>& interpreter::prelude::getPrelude() {
                 #endif
                 return NIL;
             })},
-            {"exports", OBJECT()}
+            {"rand", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(2)
+                const auto lower = getCastedPointer<NumberType, NumberValue>(args[0])->value;
+                const auto upper = getCastedPointer<NumberType, NumberValue>(args[1])->value;
+                std::uniform_real_distribution<long double> uniform(lower, upper);
+                const auto time = std::chrono::system_clock::now().time_since_epoch().count();
+                std::default_random_engine engine(time);
+                const auto value = uniform(engine);
+                return NUMBER(value);
+            })},
+            {"randint", std::make_shared<BuiltinFunction>([](auto args) -> SharedValue {
+                ARGS_SIZE(2)
+                const auto lower = getCastedPointer<NumberType, NumberValue>(args[0])->value;
+                const auto lowerLong = static_cast<long>(lower);
+                const auto upper = getCastedPointer<NumberType, NumberValue>(args[1])->value;
+                const auto upperLong = static_cast<long>(upper);
+                std::uniform_int_distribution<long> uniform(lowerLong, upperLong);
+                const auto time = std::chrono::system_clock::now().time_since_epoch().count();
+                std::default_random_engine engine(time);
+                const auto value = uniform(engine);
+                return NUMBER(value);
+            })}
             // TODO: complete the standard library
     };
     return preludeMap;
