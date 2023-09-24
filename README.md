@@ -5,8 +5,9 @@ An interpreted language implemented in C++
 ## Table of Contents
 
 - [Installation](#Installation)
-- [Short Guide](#Short Guide)
-- [Builtin Functions](#Builtin Functions)
+- [Short Guide](#ShortGuide)
+- [Real Application Example](#AppExample)
+- [Builtin Functions](#BuiltinFunctions)
 - [Contacts](#Contacts)
 
 ## Installation
@@ -171,6 +172,41 @@ let me = obj {
 ```
 =, or, and, ==, !=, <, >, <=, >=, -, +, *, /, div, mod, ^, not
 ```
+11. OOP
+```toy
+fun Cat(name) {
+    
+    let foodEaten = 0;
+
+    fun meow() {
+        echo "Cat " + name + "said meow!";
+    }
+    
+    fun purr() {
+        echo "Cat " + name + "said purrrrr!";
+    }
+    
+    fun feed(food) {
+        foodEaten += food;
+    }
+    
+    fun hungry() {
+        return foodEaten < 100;
+    }
+    
+    return obj {
+        "meow": meow,
+        "purr": purr,
+        "feed": feed,
+        "hungry": hungry,
+    };
+}
+```
+
+## Real Application Example
+
+I built a minesweeper console app in my language.
+You can find it [here](https://github.com/it1shka/minesweeper-toy)
 
 ## Builtin Functions
 Below there is a list of functions included in __language prelude__
