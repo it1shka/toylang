@@ -1,16 +1,4 @@
 1. Cover code with tests
-3. Code analyzer
-4. better import statements
-
-Make an import system implemented
-right in the interpreter.
-
-Since functions are lazy evaluated and
-they contain references to AST,
-I need to keep all the imported ASTs inside of
-an importing interpreter.
-
-Also, I need to support showing
-in which file the error was thrown, so
-the user knows where is this function defined
-(the function that threw an error)
+2. Semantic analyzer
+3. Drawing library (something like canvas2d renderer for HTML)
+4. Provide with more examples in _examples_ folder
